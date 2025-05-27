@@ -19,16 +19,6 @@ brightnessSlider.addEventListener('input', () => {
 });
 
 
-
-
-
-
-
-
-
-
-
-
 const dropdownToggle = document.querySelector('.dropdown-toggle');
 const effectButtons = document.querySelectorAll('.effect-btn');
 const effectDropdown = document.querySelector('.effect-dropdown');
