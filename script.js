@@ -49,3 +49,20 @@ document.addEventListener('click', () => {
   effectDropdown.classList.remove('open');
   dropdownToggle.setAttribute('aria-expanded', false);
 });
+
+
+
+
+
+
+
+
+function showNotification(msg, type = 'success', duration = 3000) {
+  const notif = document.getElementById('notifications');
+  notif.textContent = msg;
+  notif.className = `notifications show ${type}`;
+
+  setTimeout(() => {
+    notif.className = 'notifications';
+  }, duration);
+}
