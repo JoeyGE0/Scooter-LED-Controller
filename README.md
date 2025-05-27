@@ -7,3 +7,6 @@ example frontend UI:
 https://joeyge0.github.io/Scooter-LED-Controller/
 
 Any help would be greatly appreciated! im using chatGPT for the main structure and going off of that
+
+
+esp32 code will be added soon
