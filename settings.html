@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Settings - Scooter LEDs</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<header>
+  Settings
+</header>
+<main>
+  <form id="settings-form" autocomplete="off" onsubmit="return false;">
+
+    <h2>Brightness:</h2>
+    
+    <label for="full-brake-brightness">Full Brake Brightness</label>
+    <input
+      type="range"
+      id="full-brake-brightness"
+      name="fullBrakeBrightness"
+      min="0"
+      max="100"
+      value="100"
+      step="1"
+    />
+
+    <label for="idle-brake-brightness">Idle Brake Brightness</label>
+    <input
+      type="range"
+      id="idle-brake-brightness"
+      name="idleBrakeBrightness"
+      min="0"
+      max="100"
+      value="20"
+      step="1"
+    />
+
+    <label for="indicator-backround-dim">Indicator Backround Dim Level</label>
+    <input
+      type="range"
+      id="indicator-backround-dim"
+      name="indicatorBackroundDim"
+      min="0"
+      max="100"
+      value="20"
+      step="1"
+    />
+    
+    <br>
+
+    <h2>Transitions:</h2>
+    
+    <label for="indicator-start-transition">Indicator Start Transition</label>
+    <input type="number" id="indicator-start-transition" name="indicatorStartTransition" min="0" max="5000" value="100" />
+
+    <label for="indicator-stop-transition">Indicator Stop Transition</label>
+    <input type="number" id="indicator-stop-transition" name="indicatorStopTransition" min="0" max="5000" value="600" />
+
+    <br>
+
+    <h2>LED Count:</h2>
+    
+    <label for="total-led-count">Total LED Count</label> 
+    <input type="number" id="total-led-count" name="totalLedCount" min="0" max="1000" value="100" />
+
+    <label for="brake-led-count">Brake LED Count</label>
+    <input type="number" id="brake-led-count" name="brakeLedCount" min="0" max="50" value="20" />
+
+    <br>
+
+    <h2>GPIO:</h2>
+
+    <label for="led-data-gpio">LED Data GPIO</label>
+    <input type="number" id="led-data-gpio" name="ledDataGpio" min="0" max="50" value="1" />
+
+    <label for="brake-signal-gpio">Brake Signal GPIO</label>
+    <input type="number" id="brake-signal-gpio" name="brakeSignalGpio" min="0" max="50" value="2" />
+
+    <label for="light-signal-gpio">Light Signal GPIO</label>
+    <input type="number" id="light-signal-gpio" name="lightSignalGpio" min="0" max="50" value="3" />
+
+    <label for="left-signal-gpio">Left Indicator Signal GPIO</label>
+    <input type="number" id="left-signal-gpio" name="leftSignalGpio" min="0" max="50" value="4" />
+
+    <label for="right-signal-gpio">Right Indicator Signal GPIO</label>
+    <input type="number" id="right-signal-gpio" name="rightSignalGpio" min="0" max="50" value="5" />
+
+
+    <div class="settings-link">
+      <a href="index.html" class="btn">Back</a>
+    </div>
+  </form>
+</main>
+</body>
+</html>
