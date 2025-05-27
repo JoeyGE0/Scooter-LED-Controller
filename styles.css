@@ -48,10 +48,10 @@ input[type="color"] {
 }
 
 input[type="range"] {
-    appearance: none;
+  appearance: none;
   -webkit-appearance: none;
   width: 100%;
-  height: 6px;
+  height: 8px;
   border-radius: 6px;
   background: #2a2a2a;
   cursor: pointer;
@@ -93,16 +93,6 @@ input[type="number"] {
 input[type="number"]:focus {
   outline: 2px solid #4db8ff;
 }
-
-
-
-
-
-
-
-
-
-
 
 .effects-bar {
   display: flex;
@@ -176,10 +166,12 @@ form {
   position: fixed;
   bottom: 0;
   left: 0;
-  width: 100%;
+  right: 0;
   height: 48px;
-  background: #121212;
-  border-top: 1px solid #2a2a2a;
+  border-top-left-radius: 6px;
+  border-top-right-radius: 6px;
+
+  background: #2a2a2a;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -200,13 +192,15 @@ form {
   align-items: center;
   justify-content: center;
 }
+.settings-btn {
+  font-size: 2.6rem; /* only cog gets bigger */
+}
 
 .nav-title {
   font-weight: 600;
-  font-size: 1.1rem;
+  font-size: 1.0rem;
   user-select: none;
 }
-
 
 
 .effect-dropdown {
@@ -249,9 +243,8 @@ form {
 .effect-dropdown.open .arrow {
   transform: rotate(180deg);
 }
-
 .dropdown-list {
-  display: none;
+  display: flex;
   flex-direction: column;
   gap: 0.7rem;
   margin-top: 0.5rem;
@@ -261,8 +254,28 @@ form {
   position: absolute;
   width: 100%;
   z-index: 999;
+
+  /* Slide/fade animation setup */
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  transition:
+    max-height 0.2s ease,
+    opacity 0.2s ease;
 }
 
 .effect-dropdown.open .dropdown-list {
-  display: flex;
+  max-height: 500px; 
+  opacity: 1;
+  pointer-events: auto;
 }
+
+
+
+
+
+
+
+
+
