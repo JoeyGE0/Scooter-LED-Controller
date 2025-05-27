@@ -94,6 +94,16 @@ input[type="number"]:focus {
   outline: 2px solid #4db8ff;
 }
 
+
+
+
+
+
+
+
+
+
+
 .effects-bar {
   display: flex;
   flex-direction: column;
@@ -195,4 +205,64 @@ form {
   font-weight: 600;
   font-size: 1.1rem;
   user-select: none;
+}
+
+
+
+.effect-dropdown {
+  position: relative;
+  user-select: none;
+}
+
+.dropdown-toggle {
+  width: 100%;
+  padding: 0.6rem 0.8rem; /* added some right padding for arrow */
+  background: #2a2a2a;
+  border: none;
+  border-radius: 6px;
+  color: #f1f1f1;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background 0.3s;
+  
+  display: flex;
+  justify-content: center; /* center text + arrow horizontally */
+  align-items: center;
+  gap: 0.5rem; /* space between text and arrow */
+  text-align: center;
+}
+
+.dropdown-toggle:hover,
+.dropdown-toggle.active {
+  background: #4db8ff;
+  color: #121212;
+}
+
+.arrow {
+  display: inline-block;
+  transition: transform 0.3s ease;
+  font-size: 1rem;
+  margin-right: 0.4rem; /* a bit of space to the right */
+}
+
+.effect-dropdown.open .arrow {
+  transform: rotate(180deg);
+}
+
+.dropdown-list {
+  display: none;
+  flex-direction: column;
+  gap: 0.7rem;
+  margin-top: 0.5rem;
+  background: #2a2a2a;
+  border-radius: 6px;
+  padding: 0.5rem 0;
+  position: absolute;
+  width: 100%;
+  z-index: 999;
+}
+
+.effect-dropdown.open .dropdown-list {
+  display: flex;
 }
