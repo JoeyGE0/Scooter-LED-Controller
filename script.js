@@ -50,13 +50,6 @@ document.addEventListener('click', () => {
   dropdownToggle.setAttribute('aria-expanded', false);
 });
 
-
-
-
-
-
-
-
 function showNotification(msg, type = 'success', duration = 3000) {
   const notif = document.getElementById('notifications');
   notif.textContent = msg;
