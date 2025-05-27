@@ -12,30 +12,39 @@
     <div class="nav-title">Main</div>
     <button class="nav-btn settings-btn" title="Settings" onclick="window.location.href='settings.html'">⚙️</button>
   </nav>
-
   <main>
     <section class="brightness-section">
       <label for="color-picker">LED Colour</label>
       <input type="color" id="color-picker" value="#4db8ff" />
-
       <label for="brightness">Brightness</label>
-      <input type="range" id="brightness" min="0" max="255" value="128" />
+      <input type="range" id="brightness" min="0" max="255" value="255" />
     </section>
 
     <section class="effects-section">
       <h2>Effects</h2>
-      <div class="effects-list">
-        <button class="effect-btn" data-effect="off">Off</button>
-        <button class="effect-btn" data-effect="rainbow">Rainbow</button>
-        <button class="effect-btn" data-effect="chase">Chase</button>
-        <button class="effect-btn" data-effect="pulse">Pulse</button>
-        <button class="effect-btn" data-effect="sparkle">Sparkle</button>
+  <div class="effects-bar">
+
+
+<div class="effect-dropdown">
+  <button class="dropdown-toggle" aria-haspopup="true" aria-expanded="false">
+    Select Effect <span class="arrow">▼</span>
+  </button>
+  <div class="dropdown-list" role="menu" aria-label="Effects List">
+    <button class="effect-btn" data-effect="Solid" role="menuitem">Solid</button>
+    <button class="effect-btn" data-effect="Rainbow" role="menuitem">Rainbow</button>
+    <button class="effect-btn" data-effect="Pulse" role="menuitem">Pulse</button>
+    <button class="effect-btn" data-effect="Knight Rider" role="menuitem">Sparkle</button>
+    <button class="effect-btn" data-effect="Chase" role="menuitem">Chase</button>
+  </div>
+</div>
+
+
         <label for="effect-speed">Effect Speed</label>
-<input type="range" id="effect-speed" min="1" max="10" value="5" />
+        <input type="range" id="effect-speed" min="1" max="100" value="40" />
       </div>
     </section>
   </main>
 
-  <script src="scripts.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
