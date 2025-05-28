@@ -50,12 +50,12 @@ document.addEventListener('click', () => {
   dropdownToggle.setAttribute('aria-expanded', false);
 });
 
-function showNotification(msg, type = 'success', duration = 3000) {
-  const notif = document.getElementById('notifications');
-  notif.textContent = msg;
-  notif.className = `notifications show ${type}`;
 
-  setTimeout(() => {
-    notif.className = 'notifications';
-  }, duration);
-}
+var colorPicker = new iro.ColorPicker("#color-picker-ui", {
+  width: 200,
+  color: "#ff0000",
+});
+
+colorPicker.on('color:change', function(color) {
+  document.getElementById('selected-color').textContent = color.hexString;
+});
