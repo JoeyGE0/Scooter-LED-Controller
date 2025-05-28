@@ -15,7 +15,7 @@
 
     <h2>Brightness:</h2>
     
-    <label for="full-brake-brightness">Full Brake Brightness</label>
+    <label for="full-brake-brightness">Full Brake Brightness: <span id="full-brake-brightness-value">100</span></label>
     <input
       type="range"
       id="full-brake-brightness"
@@ -88,9 +88,15 @@
     <input type="number" id="right-signal-gpio" name="rightSignalGpio" min="0" max="50" value="5" />
 
 
+  <h2>GPIO States:</h2>
+<label>Light Signal:</label> <span id="light-state">—</span><br />
+<label>Brake Signal:</label> <span id="brake-state">—</span><br />
+<label>Left Indicator Signal:</label> <span id="left-state">—</span><br />
+<label>Right Indicator Signal:</label> <span id="right-state">—</span>
+
 
     <div class="settings-link">
-      <a href="index.html" class="btn">Back</a>
+      <a href="index.html" class="btn">Save Changes</a>
     </div>
   </form>
 </main>
