@@ -270,3 +270,22 @@ form {
   opacity: 1;
   pointer-events: auto;
 }
+
+.btn {
+  border: none; /* Remove borders */
+  color: white; /* Add a text color */
+  padding: 14px 28px; /* Add some padding */
+  cursor: pointer; /* Add a pointer cursor on mouse-over */
+  border-radius: 6px;
+
+}
+.danger {background-color: #f44336;} /* Red */
+.danger:hover {background: #da190b;}
+
+
+
+#color-picker-ui {
+  width: 200px;
+  height: 200px;
+  margin: 20px auto;
+}
