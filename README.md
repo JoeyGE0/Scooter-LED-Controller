@@ -6,7 +6,7 @@ Full addressable LED controller based on a ESP32. It uses the 12v signals coming
 example frontend UI:
 https://joeyge0.github.io/Scooter-LED-Controller/
 
-![Dev UI](dev-ui.png)
+![Dev UI](DEV-UI.png)
 
 Any help would be greatly appreciated! im using chatGPT for the main structure and going off of that
 
