@@ -2,59 +2,73 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Scooter LED Control</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+
+  <div id="loader" class="loader">
+  <div class="spinner">
+    <div class="spinnerin"></div>
+  </div>
+</div>
   <nav class="bottom-nav">
+
     <button class="nav-btn power-btn" title="Power Toggle">⏻</button>
     <div class="nav-title">Main</div>
     <button class="nav-btn settings-btn" title="Settings" onclick="window.location.href='settings.html'">⚙</button>
+
   </nav>
+
   <main>
-    <section class="brightness-section">
+
+    <section class="color-section">
       <label for="color-picker">LED Colour</label>
-<div id="color-picker-ui"></div>
-  <br>
-  <br>
-    <br>
-<br>
-      <label for="brightness">Brightness</label>
-      <input type="range" id="brightness" min="0" max="255" value="255" />
+      <div id="color-picker-ui"></div>
+      <br>
+        <div class="swatchGrid" id="swatch-grid">
+          <div class="swatch" data-color="#ff0000" style="background:#ff0000;"></div>
+          <div class="swatch" data-color="#00FF00" style="background:#00FF00;"></div>
+          <div class="swatch" data-color="#0000FF" style="background:#0000FF;"></div>
+          <div class="swatch" data-color="#00FFFF" style="background:#00FFFF;"></div>
+          <div class="swatch" data-color="#FF00FF" style="background:#FF00FF;"></div>
+          <div class="swatch" data-color="#ffffff" style="background:#ffffff;"></div>
+        </div>
+
     </section>
 
-
     <section class="effects-section">
+
       <h2>Effects</h2>
-  <div class="effects-bar">
 
+      <div class="effects-bar">
+        <div class="effect-dropdown">
+          <button class="dropdown-toggle" aria-haspopup="true" aria-expanded="false">
+            Select Effect <span class="arrow">▼</span>
+          </button>
 
-<div class="effect-dropdown">
-  <button class="dropdown-toggle" aria-haspopup="true" aria-expanded="false">
-    Select Effect <span class="arrow">▼</span>
-  </button>
-
-  <div class="dropdown-list" role="menu" aria-label="Effects List">
-    <button class="effect-btn" data-effect="Solid" role="menuitem">Solid</button>
-    <button class="effect-btn" data-effect="Rainbow" role="menuitem">Rainbow</button>
-    <button class="effect-btn" data-effect="Pulse" role="menuitem">Pulse</button>
-    <button class="effect-btn" data-effect="Sparkle" role="menuitem">Sparkle</button>
-    <button class="effect-btn" data-effect="Chase" role="menuitem">Chase</button>
-  </div>
-</div>
-
-
+          <div class="dropdown-list" role="menu" aria-label="Effects List">
+            <button class="effect-btn" data-effect="Solid" role="menuitem">Solid</button>
+            <button class="effect-btn" data-effect="Rainbow" role="menuitem">Rainbow</button>
+            <button class="effect-btn" data-effect="Pulse" role="menuitem">Pulse</button>
+            <button class="effect-btn" data-effect="Sparkle" role="menuitem">Sparkle</button>
+            <button class="effect-btn" data-effect="Chase" role="menuitem">Chase</button>
+          </div>
+        </div>
 
         <label for="effect-speed">Effect Speed</label>
         <input type="range" id="effect-speed" min="1" max="100" value="40" />
-      </div>
-    </section>
-  </main>
 
+        <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+      </div>
+
+    </section>
+
+
+  </main>
   <script src="iro.min.js"></script>
   <script src="script.js"></script>
-
 
 </body>
 </html>
