@@ -3,6 +3,8 @@ Full addressable LED controller based on a ESP32. It uses the 12v signals coming
 
 # THIS IS STILL IN DEV AND DON'T EXPECT IT TO FUNCTION
 
+The ino and UI.H will most likley be the most up to date
+
 <p align="left">
   <a href="https://joeyge0.github.io/Scooter-LED-Controller/" target="_blank" rel="noopener noreferrer">
     <img src="DEV%20UI.png" alt="DEV UI" width="340" />
