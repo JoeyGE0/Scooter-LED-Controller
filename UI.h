@@ -1,6 +1,6 @@
 #ifndef UI_H
 #define UI_H
-// THIS IS JUST AN EXAMPLE AND IT IS NOT CONNECTED. THIS IS THE WORST WAY TO ADD JS AND WILL BE WORKED ON.
+
 // Serve your custom captive portal HTML here
 const char* captivePortalHTML = R"rawliteral(
 <!DOCTYPE html>
@@ -422,19 +422,43 @@ section {
   <script>
 document.addEventListener('DOMContentLoaded', () => {
   const effects = document.querySelectorAll('.effect-btn');
+  const dropdownToggle = document.querySelector('.dropdown-toggle');
+  const effectButtons = document.querySelectorAll('.effect-btn');
+  const effectDropdown = document.querySelector('.effect-dropdown');
+
+  // Fetch current LED state on load
+  fetch('/getState')
+    .then(res => res.json())
+    .then(data => {
+      // Set initial colour
+      if (data.color) {
+        colorPicker.color.set(data.color);
+      }
+
+      // Set active effect button
+      if (data.effect) {
+        const activeBtn = document.querySelector(`.effect-btn[data-effect="${data.effect}"]`);
+        if (activeBtn) {
+          activeBtn.classList.add('active');
+          dropdownToggle.innerHTML = `${data.effect} <span class="arrow">▼</span>`;
+        }
+      }
+    }).catch(err => {
+      console.error('Failed to fetch initial LED state:', err);
+    });
 
   effects.forEach(btn => {
     btn.addEventListener('click', () => {
       effects.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
 
-      console.log('Selected effect:', btn.dataset.effect);
+      const selectedEffect = btn.dataset.effect;
+      console.log('Selected effect:', selectedEffect);
+      fetch(`/setEffect?effect=${encodeURIComponent(selectedEffect)}`)
+        .then(res => res.ok ? console.log(`Effect sent: ${selectedEffect}`) : console.error('Effect send failed'))
+        .catch(err => console.error('Fetch error:', err));
     });
   });
-
-  const dropdownToggle = document.querySelector('.dropdown-toggle');
-  const effectButtons = document.querySelectorAll('.effect-btn');
-  const effectDropdown = document.querySelector('.effect-dropdown');
 
   dropdownToggle.addEventListener('click', e => {
     e.stopPropagation();
@@ -465,10 +489,14 @@ document.addEventListener('DOMContentLoaded', () => {
     width: 200,
     color: "#ff0000",
   });
-  colorPicker.on('color:change', function(color) {
-    console.log('Selected color hex:', color.hexString);
-  });
 
+  colorPicker.on('color:change', function(color) {
+    const hex = color.hexString;
+    console.log('Selected color hex:', hex);
+    fetch(`/setColor?color=${encodeURIComponent(hex)}`)
+      .then(res => res.ok ? console.log(`Color sent: ${hex}`) : console.error('Color send failed'))
+      .catch(err => console.error('Fetch error:', err));
+  });
 
   const swatchGrid = document.getElementById("swatch-grid");
 
@@ -482,7 +510,6 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-
 window.addEventListener("load", () => {
   const loader = document.getElementById("loader");
   loader.style.opacity = 0;
@@ -491,6 +518,12 @@ window.addEventListener("load", () => {
     loader.style.display = "none";
   }, 500);
 });
+
+
+
+
+
+
 
 /*!
  * iro.js v5.5.2
