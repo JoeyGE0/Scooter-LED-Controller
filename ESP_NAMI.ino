@@ -4,7 +4,8 @@
 #include <WebServer.h>
 #include "UI.h"
 #include <ArduinoOTA.h>
-
+#include <Preferences.h>
+Preferences prefs;
 
 
 // ===== CONFIG =====
@@ -77,7 +78,6 @@ void setup() {
   Serial.begin(115200);
   Serial.println("==== Booting Up ====");
 
-
   // Setup pins
   pinMode(RIGHT_PIN, INPUT_PULLUP);
   pinMode(LEFT_PIN, INPUT_PULLUP);
@@ -89,6 +89,19 @@ void setup() {
   FastLED.clear();
   FastLED.show();
 
+  // Open prefs with namespace "leds", read/write
+  prefs.begin("leds", false);
+    // Load saved color
+  String savedColor = prefs.getString("color", "");
+  if (savedColor.length() == 7 && savedColor[0] == '#') {
+    long number = strtol(savedColor.substring(1).c_str(), NULL, 16);
+    underglowColor = CRGB((number >> 16) & 0xFF, (number >> 8) & 0xFF, number & 0xFF);
+    Serial.println("Loaded saved color: " + savedColor);
+  }
+
+  // Load saved effect
+  selectedEffect = prefs.getString("effect", "rainbow");
+  Serial.println("Loaded saved effect: " + selectedEffect);
 WiFi.softAP(ssid, password);
 Serial.print("Access Point IP: ");
 Serial.println(WiFi.softAPIP());
@@ -130,16 +143,16 @@ Serial.println("OTA Ready");
     server.sendHeader("Location", "/", true);
     server.send(302, "text/plain", "");
   });
-// Sets the LED Strip lighting colour
 server.on("/setColor", HTTP_GET, []() {
   if (server.hasArg("color")) {
     String color = server.arg("color");
     Serial.println("Color set to: " + color);
 
-    // Parse HEX to CRGB
     long number = strtol(color.substring(1).c_str(), NULL, 16);
     underglowColor = CRGB((number >> 16) & 0xFF, (number >> 8) & 0xFF, number & 0xFF);
 
+    // Save to prefs
+    prefs.putString("color", color);
   }
   server.send(200, "text/plain", "OK");
 });
@@ -150,9 +163,12 @@ server.on("/setEffect", HTTP_GET, []() {
     Serial.println("Effect set to: " + effect);
     selectedEffect = effect;
 
+    // Save to prefs
+    prefs.putString("effect", effect);
   }
   server.send(200, "text/plain", "OK");
 });
+
 
 // === GET CURRENT STATE ===
 server.on("/getState", HTTP_GET, []() {
