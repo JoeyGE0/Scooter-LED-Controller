@@ -3,37 +3,55 @@
 #include <DNSServer.h>
 #include <WebServer.h>
 #include "UI.h"
+#include <ArduinoOTA.h>
+
 
 
 // ===== CONFIG =====
-#define NUM_LEDS        141
-#define DATA_PIN        16
+#define NUM_LEDS        168 // Total LED count
+#define DATA_PIN        16 // LED data output
 
-#define BRAKE_LEN       40
+#define BRAKE_LEN       38 // Brake segment LED count
 #define MAIN_LEN        (NUM_LEDS - BRAKE_LEN)
 
-#define RIGHT_PIN       26
-#define LEFT_PIN        27
-#define BRAKE_PIN       13
-#define LIGHT_TOGGLE_PIN 17
+#define RIGHT_PIN       26 // Right indicator input pin (HIGH/LOW)
+#define LEFT_PIN        27 // Left indicator input pin (HIGH/LOW)
+#define BRAKE_PIN       13 // Brake input pin (HIGH/LOW)
+#define LIGHT_TOGGLE_PIN 17 // Light toggle input pin (HIGH/LOW)
 
-#define BRAKE_IDLE_BRIGHTNESS    50
-#define BRAKE_ACTIVE_BRIGHTNESS  255
+#define BRAKE_IDLE_BRIGHTNESS    50 // (0-255)
+#define BRAKE_ACTIVE_BRIGHTNESS  255 // (0-255)
 
-#define INDICATOR_FLASH_TIME     300
-#define BACKGROUND_DIM_LEVEL     50
-#define DIM_TRANSITION_SPEED     20
+#define INDICATOR_COLOR CRGB(255, 80, 0)
+#define INDICATOR_FLASH_TIME     300 // (MS)
+#define BACKGROUND_DIM_LEVEL     50 // (0-255)
+#define DIM_TRANSITION_SPEED     20 // (MS)
 
 CRGB leds[NUM_LEDS];
 
-// ===== STATE =====
-bool lightToggle = false;
-bool braking = false;
-bool leftIndicating = false;
-bool rightIndicating = false;
+#define BOOT_COLOR      CRGB::White //colour of boot effect
+#define BOOT_DURATION_MS 2210 // Duration and speed of the boot effect
+#define BOOT_STEPS      (MAIN_LEN / 2)
+#define BOOT_STEP_DELAY (BOOT_DURATION_MS / BOOT_STEPS)
 
-uint8_t backgroundBrightness = 255;
-bool indicatorFlashState = false;
+
+// ===== STATE =====
+bool lightToggle = false; // True or False
+bool braking = false; // True or False
+bool leftIndicating = false; // True or False
+bool rightIndicating = false; // True or False
+
+bool bootDone = false; // make this true to disable boot effect
+unsigned long bootLastStepTime = 0;
+int bootStep = 0;
+
+uint8_t backgroundBrightness = 255; // (0-255)
+bool indicatorFlashState = false; // True or False
+String selectedEffect = "rainbow";  // default effect
+CRGB underglowColor = CRGB::Blue;   // default underglow colour
+
+
+
 
 unsigned long lastIndicatorToggle = 0;
 unsigned long lastDimUpdate = 0;
@@ -71,12 +89,38 @@ void setup() {
   FastLED.clear();
   FastLED.show();
 
-  // Start captive portal AP
-  WiFi.softAP(ssid, password);
-  Serial.print("Access Point started. IP: ");
-  Serial.println(WiFi.softAPIP());
+WiFi.softAP(ssid, password);
+Serial.print("Access Point IP: ");
+Serial.println(WiFi.softAPIP());
 
-  // Start DNS server to catch all requests and redirect to captive portal IP
+
+// === OTA setup ===
+ArduinoOTA.setHostname(ssid);       // Use same as AP SSID
+ArduinoOTA.setPassword(password);   // Use same as AP password
+
+
+
+ArduinoOTA.onStart([]() {
+  Serial.println("Starting OTA update...");
+});
+ArduinoOTA.onEnd([]() {
+  Serial.println("\nOTA update finished!");
+});
+ArduinoOTA.onError([](ota_error_t error) {
+  Serial.printf("OTA Error[%u]: ", error);
+  if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
+  else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
+  else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
+  else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
+  else if (error == OTA_END_ERROR) Serial.println("End Failed");
+});
+
+ArduinoOTA.begin();
+Serial.println("OTA Ready");
+
+
+
+  // Start DNS server to redirect to captive portal IP
   dnsServer.start(DNS_PORT, "*", WiFi.softAPIP());
 
   // Setup web server routes
@@ -86,16 +130,90 @@ void setup() {
     server.sendHeader("Location", "/", true);
     server.send(302, "text/plain", "");
   });
+// Sets the LED Strip lighting colour
+server.on("/setColor", HTTP_GET, []() {
+  if (server.hasArg("color")) {
+    String color = server.arg("color");
+    Serial.println("Color set to: " + color);
+
+    // Parse HEX to CRGB
+    long number = strtol(color.substring(1).c_str(), NULL, 16);
+    underglowColor = CRGB((number >> 16) & 0xFF, (number >> 8) & 0xFF, number & 0xFF);
+
+  }
+  server.send(200, "text/plain", "OK");
+});
+
+server.on("/setEffect", HTTP_GET, []() {
+  if (server.hasArg("effect")) {
+    String effect = server.arg("effect");
+    Serial.println("Effect set to: " + effect);
+    selectedEffect = effect;
+
+  }
+  server.send(200, "text/plain", "OK");
+});
+
+// === GET CURRENT STATE ===
+server.on("/getState", HTTP_GET, []() {
+  String colorHex = "#";
+  colorHex += String(underglowColor.r, HEX);
+  colorHex += String(underglowColor.g, HEX);
+  colorHex += String(underglowColor.b, HEX);
+
+  // Pad hex digits if needed (eg: "f" => "0f")
+  if (colorHex.length() != 7) {
+    colorHex = "#";
+    if (underglowColor.r < 16) colorHex += "0";
+    colorHex += String(underglowColor.r, HEX);
+    if (underglowColor.g < 16) colorHex += "0";
+    colorHex += String(underglowColor.g, HEX);
+    if (underglowColor.b < 16) colorHex += "0";
+    colorHex += String(underglowColor.b, HEX);
+  }
+
+  String json = "{\"color\": \"" + colorHex + "\", \"effect\": \"" + selectedEffect + "\"}";
+  server.send(200, "application/json", json);
+});
+
+
 
   server.begin();
 }
 
+void runBootEffect() {
+  unsigned long now = millis();
+  if (bootStep >= BOOT_STEPS) {
+    bootDone = true;
+    // Leave LEDs fully lit white after boot
+    for (int i = 0; i < MAIN_LEN; i++) {
+      leds[i] = BOOT_COLOR;
+    }
+    FastLED.show();
+    return;
+  }
+
+  if (now - bootLastStepTime >= BOOT_STEP_DELAY) {
+    leds[bootStep] = BOOT_COLOR;
+    leds[MAIN_LEN - 1 - bootStep] = BOOT_COLOR;
+    FastLED.show();
+
+    bootStep++;
+    bootLastStepTime = now;
+  }
+}
+
+
 void loop() {
-  // Handle captive portal stuff first
   dnsServer.processNextRequest();
   server.handleClient();
+  ArduinoOTA.handle();
 
-  // Your existing input reads
+  if (!bootDone) {
+    runBootEffect();
+    return;  // Skip rest of loop until boot effect done
+  }
+
   lightToggle     = !digitalRead(LIGHT_TOGGLE_PIN);
   braking         = !digitalRead(BRAKE_PIN);
   leftIndicating  = !digitalRead(LEFT_PIN);
@@ -111,6 +229,7 @@ void loop() {
   delay(10);
 }
 
+
 // ===== LIGHT OFF MODE =====
 void runSignalOnlyMode() {
   fill_solid(leds, NUM_LEDS, CRGB::Black);
@@ -124,20 +243,31 @@ void runSignalOnlyMode() {
 void runFullEffectsMode() {
   fill_solid(leds, NUM_LEDS, CRGB::Black);
 
-  runRainbowUnderglow();
+  runEffect();
   handleIndicatorsOverlay();
   updateBrakeLights();
 }
 
-// ===== RAINBOW UNDERGLOW =====
-void runRainbowUnderglow() {
+void runUnderglow() {
   rainbowOffset++;
 
-  for (int i = 0; i < MAIN_LEN; i++) {
-    uint8_t hue = (i * 255 / MAIN_LEN + rainbowOffset) % 255;
-    leds[i] = CHSV(hue, 255, backgroundBrightness);
+  if (selectedEffect == "rainbow") {
+    for (int i = 0; i < MAIN_LEN; i++) {
+      uint8_t hue = (i * 255 / MAIN_LEN + rainbowOffset) % 255;
+      leds[i] = CHSV(hue, 255, backgroundBrightness);
+    }
+  } else if (selectedEffect == "solid") {
+    CRGB scaledColor = underglowColor;
+    scaledColor.nscale8_video(backgroundBrightness);
+    for (int i = 0; i < MAIN_LEN; i++) {
+      leds[i] = scaledColor;
+    }
+  } else {
+    // fallback to off
+    fill_solid(leds, MAIN_LEN, CRGB::Black);
   }
 }
+
 
 // ===== INDICATOR OVERLAY =====
 void handleIndicatorsOverlay() {
@@ -168,13 +298,13 @@ void handleIndicatorsOverlay() {
 
     if (leftIndicating) {
       for (int i = 0; i < mid; i++) {
-        leds[i] = CRGB(255, 165, 0);  // Orange
+        leds[i] = INDICATOR_COLOR;
       }
     }
 
     if (rightIndicating) {
       for (int i = mid; i < MAIN_LEN; i++) {
-        leds[i] = CRGB(255, 165, 0);  // Orange
+        leds[i] = INDICATOR_COLOR;
       }
     }
   }
@@ -192,5 +322,34 @@ void updateBrakeLights() {
 
   for (int i = MAIN_LEN; i < NUM_LEDS; i++) {
     leds[i] = CRGB(brightness, 0, 0);
+  }
+}
+
+void runEffect() {
+  rainbowOffset++;
+
+  if (selectedEffect.equalsIgnoreCase("rainbow")) {
+    for (int i = 0; i < MAIN_LEN; i++) {
+      uint8_t hue = (i * 255 / MAIN_LEN + rainbowOffset) % 255;
+      leds[i] = CHSV(hue, 255, backgroundBrightness);
+    }
+  } else if (selectedEffect.equalsIgnoreCase("solid")) {
+    CRGB scaledColor = underglowColor;
+    scaledColor.nscale8_video(backgroundBrightness);
+    for (int i = 0; i < MAIN_LEN; i++) {
+      leds[i] = scaledColor;
+    }
+  } else if (selectedEffect.equalsIgnoreCase("sparkle")) {
+    // Simple sparkle effect on top of solid background
+    CRGB baseColor = underglowColor;
+    baseColor.nscale8_video(backgroundBrightness / 2);
+    for (int i = 0; i < MAIN_LEN; i++) {
+      leds[i] = baseColor;
+    }
+
+    int sparkleIndex = random(MAIN_LEN);
+    leds[sparkleIndex] = CRGB::White;  // Sparkle white pixel
+  } else {
+    fill_solid(leds, MAIN_LEN, CRGB::Black);
   }
 }
