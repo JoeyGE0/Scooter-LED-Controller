@@ -3,7 +3,7 @@ Full addressable LED controller based on a ESP32. It uses the 12v signals coming
 
 # THIS IS STILL IN DEV AND DON'T EXPECT IT TO FUNCTION
 
-The ino and UI.H will most likley be the most up to date
+The ino and UI.H will most likly be the most up to date
 
 <p align="left">
   <a href="https://joeyge0.github.io/Scooter-LED-Controller/" target="_blank" rel="noopener noreferrer">
@@ -20,6 +20,3 @@ The ino and UI.H will most likley be the most up to date
 
 
 Any help would be greatly appreciated! im using chatGPT for the main structure and going off of that
-
-
-the captive portal part is not connected to the esp!!
