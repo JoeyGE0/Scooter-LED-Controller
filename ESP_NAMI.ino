@@ -1,67 +1,89 @@
-#include <FastLED.h>
-#include <WiFi.h>
-#include <DNSServer.h>
-#include <WebServer.h>
-#include "UI.h"
-#include <ArduinoOTA.h>
-#include <Preferences.h>
+#include <FastLED.h> // For LED Control
+#include <WiFi.h> // Needed for captive portal
+#include <DNSServer.h> // Needed for captive portal
+#include <WebServer.h> // Needed for captive portal
+#include <ArduinoOTA.h> // For OTA updates
+#include <Preferences.h> // saves settings and sates in non-volatile storage
+#include "UI.h" // Needed for main UI
+#include "Settings.h" // Needed for settings page
 Preferences prefs;
 
 
-// ===== CONFIG =====
-#define NUM_LEDS        168 // Total LED count
-#define DATA_PIN        16 // LED data output
+// ===== DEFINES =====
+// Hardware and LED config
+#define NUM_LEDS        168    // Total LED count
+#define DATA_PIN        16     // LED data output pin
 
-#define BRAKE_LEN       38 // Brake segment LED count
+#define BRAKE_LEN       38     // Number of LEDs reserved for brake segment
 #define MAIN_LEN        (NUM_LEDS - BRAKE_LEN)
 
-#define RIGHT_PIN       26 // Right indicator input pin (HIGH/LOW)
-#define LEFT_PIN        27 // Left indicator input pin (HIGH/LOW)
-#define BRAKE_PIN       13 // Brake input pin (HIGH/LOW)
-#define LIGHT_TOGGLE_PIN 17 // Light toggle input pin (HIGH/LOW)
+#define RIGHT_PIN       26     // Right indicator input pin (HIGH/LOW)
+#define LEFT_PIN        27     // Left indicator input pin (HIGH/LOW)
+#define BRAKE_PIN       13     // Brake input pin (HIGH/LOW)
+#define LIGHT_TOGGLE_PIN 17    // Light toggle input pin (HIGH/LOW)
 
-#define BRAKE_IDLE_BRIGHTNESS    50 // (0-255)
-#define BRAKE_ACTIVE_BRIGHTNESS  255 // (0-255)
+// Brightness and timing constants
+#define BRAKE_IDLE_BRIGHTNESS    50    // Brake LEDs brightness when idle (0-255)
+#define BRAKE_ACTIVE_BRIGHTNESS  255   // Brake LEDs brightness when active (0-255)
 
-#define INDICATOR_COLOR CRGB(255, 80, 0)
-#define INDICATOR_FLASH_TIME     300 // (MS)
-#define BACKGROUND_DIM_LEVEL     50 // (0-255)
-#define DIM_TRANSITION_SPEED     20 // (MS)
+#define INDICATOR_COLOR          CRGB(255, 80, 0) // Indicator LED colour (R,G,B)
+#define INDICATOR_FLASH_TIME     300   // Indicator flash interval in ms
+#define BACKGROUND_DIM_LEVEL     50    // Dim level for background LEDs (0-255)
+#define DIM_TRANSITION_SPEED     20    // Speed for dimming transition in ms
 
-CRGB leds[NUM_LEDS];
+#define BOOT_COLOR               CRGB::White // Colour for boot effect
+#define BOOT_DURATION_MS         2210        // Total boot effect duration in ms
+#define BOOT_STEPS               (MAIN_LEN / 2)   // Steps in boot effect
+#define BOOT_STEP_DELAY          (BOOT_DURATION_MS / BOOT_STEPS) // Delay per boot step
 
-#define BOOT_COLOR      CRGB::White //colour of boot effect
-#define BOOT_DURATION_MS 2210 // Duration and speed of the boot effect
-#define BOOT_STEPS      (MAIN_LEN / 2)
-#define BOOT_STEP_DELAY (BOOT_DURATION_MS / BOOT_STEPS)
+#define TRAIL_UPDATE_INTERVAL    15    // Interval between trail animation steps (ms)
 
 
-// ===== STATE =====
-bool lightToggle = false; // True or False
-bool braking = false; // True or False
-bool leftIndicating = false; // True or False
-bool rightIndicating = false; // True or False
+// ===== GLOBAL OBJECTS =====
+CRGB leds[NUM_LEDS];  // LED array
 
-bool bootDone = false; // make this true to disable boot effect
+
+// ===== STATE VARIABLES =====
+// Toggle states
+bool lightToggle = false;
+bool braking = false;
+bool leftIndicating = false;
+bool rightIndicating = false;
+
+// Boot effect state
+bool bootDone = false; // set true to skip boot effect
 unsigned long bootLastStepTime = 0;
 int bootStep = 0;
 
-uint8_t backgroundBrightness = 255; // (0-255)
-bool indicatorFlashState = false; // True or False
-String selectedEffect = "rainbow";  // default effect
-CRGB underglowColor = CRGB::Blue;   // default underglow colour
+// Indicator and underglow state
+uint8_t backgroundBrightness = 255; // brightness for background LEDs
+bool indicatorFlashState = false;   // flashing state for indicators
 
+String selectedEffect = "rainbow";  // Default LED effect
+CRGB underglowColor = CRGB::Blue;   // Default underglow colour
 
+// Indicator trail mode and animation
+bool indicatorTrailMode = false;    // false = flash mode, true = trail mode
+int trailLength = 40;               // Length of the indicator trail
+int trailPosition = 0;              // Current position for trail animation
+bool leftTrailReverse = false;      // Reverse direction for left indicator trail
+bool rightTrailReverse = true;      // Reverse direction for right indicator trail
+unsigned long lastTrailUpdate = 0;  // Last time trail updated
 
-
+// Timing helpers for indicators and dimming
 unsigned long lastIndicatorToggle = 0;
 unsigned long lastDimUpdate = 0;
 
-uint16_t rainbowOffset = 0;  // For moving rainbow
+// Misc animation variables
+uint16_t rainbowOffset = 0;  // Offset for moving rainbow effect
+uint8_t pulseBrightness = 0; // Current brightness for pulse effect
+int pulseDirection = 5;      // Pulse brightness step
+int chasePosition = 0;       // Position for chase effect
 
-// ===== WIFI CAPTIVE PORTAL SETUP =====
-const char* ssid = "Nami-LEDS";
-const char* password = "Joeyrides123";
+// ===== WIFI CAPTIVE PORTAL =====
+const char* ssid = "Nami-LEDS"; // SSID name for network
+const char* password = "Joeyrides123"; // Password for network
+
 
 const byte DNS_PORT = 53;
 DNSServer dnsServer;
@@ -74,6 +96,10 @@ void handleRoot() {
 
 }
 
+// Sends the settings page
+void handleSettings() {
+  server.send_P(200, "text/html", settingsPageHTML);
+}
 void setup() {
   Serial.begin(115200);
   Serial.println("==== Booting Up ====");
@@ -112,7 +138,6 @@ ArduinoOTA.setHostname(ssid);       // Use same as AP SSID
 ArduinoOTA.setPassword(password);   // Use same as AP password
 
 
-
 ArduinoOTA.onStart([]() {
   Serial.println("Starting OTA update...");
 });
@@ -138,11 +163,13 @@ Serial.println("OTA Ready");
 
   // Setup web server routes
   server.on("/", handleRoot);
+  server.on("/settings", handleSettings);
   server.onNotFound([]() {
     // Redirect any other URL to root (captive portal)
     server.sendHeader("Location", "/", true);
     server.send(302, "text/plain", "");
   });
+
 server.on("/setColor", HTTP_GET, []() {
   if (server.hasArg("color")) {
     String color = server.arg("color");
@@ -192,8 +219,6 @@ server.on("/getState", HTTP_GET, []() {
   server.send(200, "application/json", json);
 });
 
-
-
   server.begin();
 }
 
@@ -242,7 +267,7 @@ void loop() {
   }
 
   FastLED.show();
-  delay(10);
+  delay(5);
 }
 
 
@@ -289,15 +314,9 @@ void runUnderglow() {
 void handleIndicatorsOverlay() {
   unsigned long now = millis();
 
-  // Flash toggle
-  if (now - lastIndicatorToggle >= INDICATOR_FLASH_TIME) {
-    indicatorFlashState = !indicatorFlashState;
-    lastIndicatorToggle = now;
-  }
-
   bool indicating = leftIndicating || rightIndicating;
 
-  // Smooth dimming
+  // Smooth dimming for background brightness (same for both modes)
   if (now - lastDimUpdate >= DIM_TRANSITION_SPEED) {
     if (indicating && backgroundBrightness > BACKGROUND_DIM_LEVEL) {
       backgroundBrightness -= 5;
@@ -308,19 +327,66 @@ void handleIndicatorsOverlay() {
     lastDimUpdate = now;
   }
 
-  // Draw indicators
-  if (indicatorFlashState) {
-    int mid = MAIN_LEN / 2;
+  int mid = MAIN_LEN / 2;
+
+  if (!indicatorTrailMode) {
+    // Classic flash mode
+    if (now - lastIndicatorToggle >= INDICATOR_FLASH_TIME) {
+      indicatorFlashState = !indicatorFlashState;
+      lastIndicatorToggle = now;
+    }
+
+    if (indicatorFlashState) {
+      if (leftIndicating) {
+        for (int i = 0; i < mid; i++) {
+          leds[i] = INDICATOR_COLOR;
+        }
+      }
+
+      if (rightIndicating) {
+        for (int i = mid; i < MAIN_LEN; i++) {
+          leds[i] = INDICATOR_COLOR;
+        }
+      }
+    }
+  } else {
+    // Trail mode — NO fadeToBlackBy anymore!
+
+    if (now - lastTrailUpdate >= TRAIL_UPDATE_INTERVAL) {
+      trailPosition = (trailPosition + 1) % mid; // note: use mid for wrap on left side, for right side handle separately
+      lastTrailUpdate = now;
+    }
 
     if (leftIndicating) {
+      // No fadeToBlackBy, just overlay trail on left side
       for (int i = 0; i < mid; i++) {
-        leds[i] = INDICATOR_COLOR;
+        // Could optionally clear or set background with scaled brightness here
+        // but don't fade to black
+      }
+
+      for (int i = 0; i < trailLength; i++) {
+        int pos = (trailPosition + i) % mid;
+        if (leftTrailReverse) {
+          pos = mid - 1 - pos;
+        }
+        leds[pos] = INDICATOR_COLOR;
       }
     }
 
     if (rightIndicating) {
+      // No fadeToBlackBy, just overlay trail on right side
       for (int i = mid; i < MAIN_LEN; i++) {
-        leds[i] = INDICATOR_COLOR;
+        // same as left, no fadeToBlackBy
+      }
+
+      for (int i = 0; i < trailLength; i++) {
+        int pos = (trailPosition + i) % (MAIN_LEN - mid);
+        if (rightTrailReverse) {
+          pos = (MAIN_LEN - 1) - pos;
+        } else {
+          pos = mid + pos;
+        }
+        leds[pos] = INDICATOR_COLOR;
       }
     }
   }
@@ -356,7 +422,6 @@ void runEffect() {
       leds[i] = scaledColor;
     }
   } else if (selectedEffect.equalsIgnoreCase("sparkle")) {
-    // Simple sparkle effect on top of solid background
     CRGB baseColor = underglowColor;
     baseColor.nscale8_video(backgroundBrightness / 2);
     for (int i = 0; i < MAIN_LEN; i++) {
@@ -365,7 +430,38 @@ void runEffect() {
 
     int sparkleIndex = random(MAIN_LEN);
     leds[sparkleIndex] = CRGB::White;  // Sparkle white pixel
-  } else {
+  } else if (selectedEffect.equalsIgnoreCase("pulse")) {
+    // Pulse effect: brightness goes up and down smoothly
+    pulseBrightness += pulseDirection;
+    if (pulseBrightness <= 50 || pulseBrightness >= backgroundBrightness) {
+      pulseDirection = -pulseDirection;  // reverse direction
+      pulseBrightness = constrain(pulseBrightness, 50, backgroundBrightness);
+    }
+    CRGB scaledColor = underglowColor;
+    scaledColor.nscale8_video(pulseBrightness);
+    for (int i = 0; i < MAIN_LEN; i++) {
+      leds[i] = scaledColor;
+    }
+  } else if (selectedEffect.equalsIgnoreCase("chase")) {
+    int chaseLength = 8;       // Number of LEDs lit at once — just change this number for bigger or smaller
+    int fadeAmount = 150;      // Trail fade speed (0-255)
+
+    // Fade all LEDs to create trailing effect
+    for (int i = 0; i < MAIN_LEN; i++) {
+      leds[i].nscale8(fadeAmount);
+    }
+
+    // Light up chaseLength LEDs starting at chasePosition
+    for (int i = 0; i < chaseLength; i++) {
+      int ledIndex = (chasePosition + i) % MAIN_LEN;
+      leds[ledIndex] = underglowColor;
+    }
+
+    // Move the chase forward
+    chasePosition = (chasePosition + 1) % MAIN_LEN;
+  }
+
+  else {
     fill_solid(leds, MAIN_LEN, CRGB::Black);
   }
 }
