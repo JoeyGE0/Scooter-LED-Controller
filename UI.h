@@ -368,7 +368,7 @@ section {
 
     <button class="nav-btn power-btn" title="Power Toggle">⏻</button>
     <div class="nav-title">Main</div>
-    <button class="nav-btn settings-btn" title="Settings" onclick="window.location.href='settings.html'">⚙</button>
+    <button class="nav-btn settings-btn" title="Settings" onclick="window.location.href='/settings'">⚙</button>
 
   </nav>
 
@@ -518,11 +518,6 @@ window.addEventListener("load", () => {
     loader.style.display = "none";
   }, 500);
 });
-
-
-
-
-
 
 
 /*!
