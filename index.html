@@ -1,74 +1,193 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Scooter LED Control</title>
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="preload" href="styles.css" as="style">
+  <link rel="preload" href="iro.min.js" as="script">
+  <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
-
   <div id="loader" class="loader">
-  <div class="spinner">
-    <div class="spinnerin"></div>
+    <div class="spinner">
+      <div class="spinnerin"></div>
+    </div>
   </div>
-</div>
+
   <nav class="bottom-nav">
-
-    <button class="nav-btn power-btn" title="Power Toggle">⏻</button>
+    <button class="nav-btn power-btn" title="Power Toggle">
+      <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
+        <path d="M7.5 1v7h1V1z" />
+        <path d="M3 8.812a5 5 0 0 1 2.578-4.375l-.485-.874A6 6 0 1 0 11 3.616l-.501.865A5 5 0 1 1 3 8.812" />
+      </svg>
+    </button>
     <div class="nav-title">Main</div>
-    <button class="nav-btn settings-btn" title="Settings" onclick="window.location.href='settings.html'">⚙</button>
-
+    <button class="nav-btn settings-btn" title="Settings" onclick="window.location.href='/settings'">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
+        <path
+          d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z" />
+      </svg>
+    </button>
   </nav>
 
   <main>
-
     <section class="color-section">
-      <label for="color-picker">LED Colour</label>
+      <label for="color-picker">
+        <svg class="label-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
+          <path
+            d="M12.433 10.07C14.133 10.585 16 11.15 16 8a8 8 0 1 0-8 8c1.996 0 1.826-1.504 1.649-3.08-.124-1.101-.252-2.237.351-2.92.465-.527 1.42-.237 2.433.07M8 5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3m4.5 3a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3M5 6.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m.5 6.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3" />
+        </svg>
+        LED Colour
+      </label>
       <div id="color-picker-ui"></div>
-      <br>
-        <div class="swatchGrid" id="swatch-grid">
-          <div class="swatch" data-color="#ff0000" style="background:#ff0000;"></div>
-          <div class="swatch" data-color="#00FF00" style="background:#00FF00;"></div>
-          <div class="swatch" data-color="#0000FF" style="background:#0000FF;"></div>
-          <div class="swatch" data-color="#00FFFF" style="background:#00FFFF;"></div>
-          <div class="swatch" data-color="#FF00FF" style="background:#FF00FF;"></div>
-          <div class="swatch" data-color="#ffffff" style="background:#ffffff;"></div>
-        </div>
-
+      <div class="swatchGrid" id="swatch-grid">
+        <div class="swatch" data-color="#ff0000"></div>
+        <div class="swatch" data-color="#00FF00"></div>
+        <div class="swatch" data-color="#0000FF"></div>
+        <div class="swatch" data-color="#00FFFF"></div>
+        <div class="swatch" data-color="#FF00FF"></div>
+        <div class="swatch" data-color="#ffffff"></div>
+      </div>
     </section>
 
     <section class="effects-section">
-
-      <h2>Effects</h2>
-
+      <h2>
+        <svg class="section-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
+          <path
+            d="M7.657 6.247c.11-.33.576-.33.686 0l.645 1.937a2.89 2.89 0 0 0 1.829 1.828l1.936.645c.33.11.33.576 0 .686l-1.937.645a2.89 2.89 0 0 0-1.828 1.829l-.645 1.936a.361.361 0 0 1-.686 0l-.645-1.937a2.89 2.89 0 0 0-1.828-1.828l-1.937-.645a.361.361 0 0 1 0-.686l1.937-.645a2.89 2.89 0 0 0 1.828-1.828zM3.794 1.148a.217.217 0 0 1 .412 0l.387 1.162c.173.518.579.924 1.097 1.097l1.162.387a.217.217 0 0 1 0 .412l-1.162.387A1.73 1.73 0 0 0 4.593 5.69l-.387 1.162a.217.217 0 0 1-.412 0L3.407 5.69A1.73 1.73 0 0 0 2.31 4.593l-1.162-.387a.217.217 0 0 1 0-.412l1.162-.387A1.73 1.73 0 0 0 3.407 2.31zM10.863.099a.145.145 0 0 1 .274 0l.258.774c.115.346.386.617.732.732l.774.258a.145.145 0 0 1 0 .274l-.774.258a1.16 1.16 0 0 0-.732.732l-.258.774a.145.145 0 0 1-.274 0l-.258-.774a1.16 1.16 0 0 0-.732-.732L9.1 2.137a.145.145 0 0 1 0-.274l.774-.258c.346-.115.617-.386.732-.732z" />
+        </svg>
+        Effects
+      </h2>
       <div class="effects-bar">
         <div class="effect-dropdown">
           <button class="dropdown-toggle" aria-haspopup="true" aria-expanded="false">
-            Select Effect <span class="arrow">▼</span>
+            <svg class="dropdown-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
+              <circle cx="8" cy="8" r="8" />
+            </svg>
+            <span class="dropdown-text">Select Effect</span>
+            <span class="arrow">▼</span>
           </button>
-
           <div class="dropdown-list" role="menu" aria-label="Effects List">
-            <button class="effect-btn" data-effect="Solid" role="menuitem">Solid</button>
-            <button class="effect-btn" data-effect="Rainbow" role="menuitem">Rainbow</button>
-            <button class="effect-btn" data-effect="Pulse" role="menuitem">Pulse</button>
-            <button class="effect-btn" data-effect="Sparkle" role="menuitem">Sparkle</button>
-            <button class="effect-btn" data-effect="Chase" role="menuitem">Chase</button>
+            <button class="effect-btn" data-effect="Solid" role="menuitem">
+              <svg class="effect-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
+                <circle cx="8" cy="8" r="8" />
+              </svg>
+              Solid
+            </button>
+            <button class="effect-btn" data-effect="Rainbow" role="menuitem">
+              <svg class="effect-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
+                <path
+                  d="M8 4.5a7 7 0 0 0-7 7 .5.5 0 0 1-1 0 8 8 0 1 1 16 0 .5.5 0 0 1-1 0 7 7 0 0 0-7-7m0 2a5 5 0 0 0-5 5 .5.5 0 0 1-1 0 6 6 0 1 1 12 0 .5.5 0 0 1-1 0 5 5 0 0 0-5-5m0 2a3 3 0 0 0-3 3 .5.5 0 0 1-1 0 4 4 0 1 1 8 0 .5.5 0 0 1-1 0 3 3 0 0 0-3-3m0 2a1 1 0 0 0-1 1 .5.5 0 0 1-1 0 2 2 0 1 1 4 0 .5.5 0 0 1-1 0 1 1 0 0 0-1-1" />
+              </svg>
+              Rainbow
+            </button>
+            <button class="effect-btn" data-effect="Pulse" role="menuitem">
+              <svg class="effect-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
+                <path fill-rule="evenodd"
+                  d="M6 2a.5.5 0 0 1 .47.33L10 12.036l1.53-4.208A.5.5 0 0 1 12 7.5h3.5a.5.5 0 0 1 0 1h-3.15l-1.88 5.17a.5.5 0 0 1-.94 0L6 3.964 4.47 8.171A.5.5 0 0 1 4 8.5H.5a.5.5 0 0 1 0-1h3.15l1.88-5.17A.5.5 0 0 1 6 2" />
+              </svg>
+              Pulse
+            </button>
+            <button class="effect-btn" data-effect="Sparkle" role="menuitem">
+              <svg class="effect-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
+                <path
+                  d="M7.657 6.247c.11-.33.576-.33.686 0l.645 1.937a2.89 2.89 0 0 0 1.829 1.828l1.936.645c.33.11.33.576 0 .686l-1.937.645a2.89 2.89 0 0 0-1.828 1.829l-.645 1.936a.361.361 0 0 1-.686 0l-.645-1.937a2.89 2.89 0 0 0-1.828-1.828l-1.937-.645a.361.361 0 0 1 0-.686l1.937-.645a2.89 2.89 0 0 0 1.828-1.828zM3.794 1.148a.217.217 0 0 1 .412 0l.387 1.162c.173.518.579.924 1.097 1.097l1.162.387a.217.217 0 0 1 0 .412l-1.162.387A1.73 1.73 0 0 0 4.593 5.69l-.387 1.162a.217.217 0 0 1-.412 0L3.407 5.69A1.73 1.73 0 0 0 2.31 4.593l-1.162-.387a.217.217 0 0 1 0-.412l1.162-.387A1.73 1.73 0 0 0 3.407 2.31zM10.863.099a.145.145 0 0 1 .274 0l.258.774c.115.346.386.617.732.732l.774.258a.145.145 0 0 1 0 .274l-.774.258a1.16 1.16 0 0 0-.732.732l-.258.774a.145.145 0 0 1-.274 0l-.258-.774a1.16 1.16 0 0 0-.732-.732L9.1 2.137a.145.145 0 0 1 0-.274l.774-.258c.346-.115.617-.386.732-.732z" />
+              </svg>
+              Sparkle
+            </button>
+            <button class="effect-btn" data-effect="Chase" role="menuitem">
+              <svg class="effect-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
+                <path
+                  d="M11.534 7h3.932a.25.25 0 0 1 .192.41l-1.966 2.36a.25.25 0 0 1-.384 0l-1.966-2.36a.25.25 0 0 1 .192-.41m-11 2h3.932a.25.25 0 0 0 .192-.41L2.692 6.23a.25.25 0 0 0-.384 0L.342 8.59A.25.25 0 0 0 .534 9" />
+                <path fill-rule="evenodd"
+                  d="M8 3c-1.552 0-2.94.707-3.857 1.818a.5.5 0 1 1-.771-.636A6.002 6.002 0 0 1 13.917 7H12.9A5 5 0 0 0 8 3M3.1 9a5.002 5.002 0 0 0 8.757 2.182.5.5 0 1 1 .771.636A6.002 6.002 0 0 1 2.083 9z" />
+              </svg>
+              Chase
+            </button>
+            <button class="effect-btn" data-effect="Hazard" role="menuitem">
+              <svg class="effect-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
+                <path
+                  d="M7.938 2.016A.13.13 0 0 1 8.002 2a.13.13 0 0 1 .063.016.15.15 0 0 1 .054.057l6.857 11.667c.036.06.035.124.002.183a.2.2 0 0 1-.054.06.1.1 0 0 1-.066.017H1.146a.1.1 0 0 1-.066-.017.2.2 0 0 1-.054-.06.18.18 0 0 1 .002-.183L7.884 2.073a.15.15 0 0 1 .054-.057m1.044-.45a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767z" />
+                <path
+                  d="M7.002 12a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 5.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z" />
+              </svg>
+              Hazard
+            </button>
+            <button class="effect-btn" data-effect="X-lights" role="menuitem">
+              <svg class="effect-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
+                <path
+                  d="m7.646 9.354-3.792 3.792a.5.5 0 0 0 .353.854h7.586a.5.5 0 0 0 .354-.854L8.354 9.354a.5.5 0 0 0-.708 0" />
+                <path
+                  d="M11.414 11H14.5a.5.5 0 0 0 .5-.5v-7a.5.5 0 0 0-.5-.5h-13a.5.5 0 0 0-.5.5v7a.5.5 0 0 0 .5.5h3.086l-1 1H1.5A1.5 1.5 0 0 1 0 10.5v-7A1.5 1.5 0 0 1 1.5 2h13A1.5 1.5 0 0 1 16 3.5v7a1.5 1.5 0 0 1-1.5 1.5h-2.086z" />
+              </svg>
+              X-Lights/DDP
+            </button>
           </div>
         </div>
 
-        <label for="effect-speed">Effect Speed</label>
-        <input type="range" id="effect-speed" min="1" max="100" value="40" />
-
-        <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+        <label for="effect-speed">Effect Speed: <span id="effect-speed-value">40</span></label>
+        <input type="range" id="effect-speed" min="1" max="100" value="40">
       </div>
 
+      <div class="quick-actions">
+        <h3>
+          <svg class="section-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
+            <path
+              d="M11.251.068a.5.5 0 0 1 .227.58L9.677 6.5H13a.5.5 0 0 1 .364.843l-8 8.5a.5.5 0 0 1-.842-.49L6.323 9.5H3a.5.5 0 0 1-.364-.843l8-8.5a.5.5 0 0 1 .615-.09z" />
+          </svg>
+          Quick Actions
+        </h3>
+        <div class="action-buttons">
+          <button class="action-btn" onclick="quickAction('off')">
+            <svg class="action-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M7.5 1v7h1V1z" />
+              <path d="M3 8.812a5 5 0 0 1 2.578-4.375l-.485-.874A6 6 0 1 0 11 3.616l-.501.865A5 5 0 1 1 3 8.812" />
+            </svg>
+            <span class="action-text">Lights Off</span>
+          </button>
+          <button class="action-btn" onclick="quickAction('solid')">
+            <svg class="action-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
+              <circle cx="8" cy="8" r="8" />
+            </svg>
+            <span class="action-text">Solid</span>
+          </button>
+          <button class="action-btn" onclick="quickAction('rainbow')">
+            <svg class="action-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
+              <path
+                d="M8 4.5a7 7 0 0 0-7 7 .5.5 0 0 1-1 0 8 8 0 1 1 16 0 .5.5 0 0 1-1 0 7 7 0 0 0-7-7m0 2a5 5 0 0 0-5 5 .5.5 0 0 1-1 0 6 6 0 1 1 12 0 .5.5 0 0 1-1 0 5 5 0 0 0-5-5m0 2a3 3 0 0 0-3 3 .5.5 0 0 1-1 0 4 4 0 1 1 8 0 .5.5 0 0 1-1 0 3 3 0 0 0-3-3m0 2a1 1 0 0 0-1 1 .5.5 0 0 1-1 0 2 2 0 1 1 4 0 .5.5 0 0 1-1 0 1 1 0 0 0-1-1" />
+            </svg>
+            <span class="action-text">Rainbow</span>
+          </button>
+          <button class="action-btn" onclick="quickAction('hazard')">
+            <svg class="action-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
+              <path
+                d="M7.938 2.016A.13.13 0 0 1 8.002 2a.13.13 0 0 1 .063.016.15.15 0 0 1 .054.057l6.857 11.667c.036.06.035.124.002.183a.2.2 0 0 1-.054.06.1.1 0 0 1-.066.017H1.146a.1.1 0 0 1-.066-.017.2.2 0 0 1-.054-.06.18.18 0 0 1 .002-.183L7.884 2.073a.15.15 0 0 1 .054-.057m1.044-.45a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767z" />
+              <path
+                d="M7.002 12a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 5.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z" />
+            </svg>
+            <span class="action-text">Hazard</span>
+          </button>
+        </div>
+      </div>
     </section>
 
+    <div id="popupBox" class="popupBox" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="popupTitle"
+      aria-describedby="popupDesc">
+      <div class="popupContent">
+        <h2 id="popupTitle"></h2>
+        <p id="popupDesc"></p>
+        <button id="popupCloseBtn">Got it</button>
+      </div>
+    </div>
 
+    <div id="notification" class="notification"></div>
   </main>
+
   <script src="iro.min.js"></script>
   <script src="script.js"></script>
-
 </body>
+
 </html>
