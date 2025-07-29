@@ -1,9 +1,7 @@
 # Scooter-LED-Controller
-Full addressable LED controller based on a ESP32. It uses the 12v signals coming from the scooter for indicators, brake lights and light button. **These 12v voltages need to be stepped down to a voltage save for the esp to handle**
+Full addressable LED controller based on a ESP32. It uses the 12v signals coming from the scooter for indicators, brake lights and light button. **These 12v voltages need to be stepped down to a voltage save for the esp to handle (OPTO isolator)**
 
-# THIS IS STILL IN DEV AND DON'T EXPECT IT TO FUNCTION
-
-The ino and UI.H will most likly be the most up to date
+# THIS IS STILL IN DEV AND HAS BUGS
 
 <p align="left">
   <a href="https://joeyge0.github.io/Scooter-LED-Controller/" target="_blank" rel="noopener noreferrer">
