@@ -1,7 +1,7 @@
 # Scooter-LED-Controller
-Full addressable LED controller based on a ESP32. It uses the 12v signals coming from the scooter for indicators, brake lights and light button. **These 12v voltages need to be stepped down to a voltage save for the esp to handle (OPTO isolator)**
+Full addressable LED controller based on a ESP32. in my case it uses the 12v signals coming from the scooter for indicators, brake lights and light button. **These 12v voltages need to be stepped down to a voltage save for the esp to handle (OPTO isolator)**
 
-# THIS IS STILL IN DEV AND HAS BUGS
+## THIS IS STILL IN DEV AND HAS A FEW BUGS
 
 <p align="left">
   <a href="https://joeyge0.github.io/Scooter-LED-Controller/" target="_blank" rel="noopener noreferrer">
@@ -17,4 +17,6 @@ Full addressable LED controller based on a ESP32. It uses the 12v signals coming
 
 
 
-Any help would be greatly appreciated! im using chatGPT for the main structure and going off of that
+Any help would be greatly appreciated! i dont really know how to code very well- im using ChatGPT and now Cursor for the main structure and going off of that. 
+
+all main functions currently work and us currently usable but i woukd wait until proper release comes out
