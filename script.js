@@ -2,6 +2,10 @@
 let colorPicker;
 let lastColor = '#ff0000';
 
+// PWA variables
+let deferredPrompt;
+let isPWAInstalled = false;
+
 // DOM elements cache
 const elements = {
   loader: null,
@@ -14,7 +18,30 @@ const elements = {
   popupTitle: null,
   popupDesc: null,
   swatchGrid: null,
-  notification: null
+  notification: null,
+  effectSpeedSlider: null,
+  effectSpeedValue: null
+};
+
+// Cached selectors and constants
+const SELECTORS = {
+  EFFECT_BTN: '.effect-btn',
+  ACTION_BTN: '.action-btn',
+  DROPDOWN_TOGGLE: '.dropdown-toggle',
+  EFFECT_DROPDOWN: '.effect-dropdown',
+  EFFECT_SPEED: '#effect-speed',
+  EFFECT_SPEED_VALUE: '#effect-speed-value'
+};
+
+// Effect icons cache
+const EFFECT_ICONS = {
+  'Solid': '<svg class="dropdown-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><circle cx="8" cy="8" r="8"/></svg>',
+  'Rainbow': '<svg class="dropdown-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M8 4.5a7 7 0 0 0-7 7 .5.5 0 0 1-1 0 8 8 0 1 1 16 0 .5.5 0 0 1-1 0 7 7 0 0 0-7-7m0 2a5 5 0 0 0-5 5 .5.5 0 0 1-1 0 6 6 0 1 1 12 0 .5.5 0 0 1-1 0 5 5 0 0 0-5-5m0 2a3 3 0 0 0-3 3 .5.5 0 0 1-1 0 4 4 0 1 1 8 0 .5.5 0 0 1-1 0 3 3 0 0 0-3-3m0 2a1 1 0 0 0-1 1 .5.5 0 0 1-1 0 2 2 0 1 1 4 0 .5.5 0 0 1-1 0 1 1 0 0 0-1-1"/></svg>',
+  'Pulse': '<svg class="dropdown-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M6 2a.5.5 0 0 1 .47.33L10 12.036l1.53-4.208A.5.5 0 0 1 12 7.5h3.5a.5.5 0 0 1 0 1h-3.15l-1.88 5.17a.5.5 0 0 1-.94 0L6 3.964 4.47 8.171A.5.5 0 0 1 4 8.5H.5a.5.5 0 0 1 0-1h3.15l1.88-5.17A.5.5 0 0 1 6 2"/></svg>',
+  'Sparkle': '<svg class="dropdown-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M7.657 6.247c.11-.33.576-.33.686 0l.645 1.937a2.89 2.89 0 0 0 1.829 1.828l1.936.645c.33.11.33.576 0 .686l-1.937.645a2.89 2.89 0 0 0-1.828 1.829l-.645 1.936a.361.361 0 0 1-.686 0l-.645-1.937a2.89 2.89 0 0 0-1.828-1.828l-1.937-.645a.361.361 0 0 1 0-.686l1.937-.645a2.89 2.89 0 0 0 1.828-1.828zM3.794 1.148a.217.217 0 0 1 .412 0l.387 1.162c.173.518.579.924 1.097 1.097l1.162.387a.217.217 0 0 1 0 .412l-1.162.387A1.73 1.73 0 0 0 4.593 5.69l-.387 1.162a.217.217 0 0 1-.412 0L3.407 5.69A1.73 1.73 0 0 0 2.31 4.593l-1.162-.387a.217.217 0 0 1 0-.412l1.162-.387A1.73 1.73 0 0 0 3.407 2.31zM10.863.099a.145.145 0 0 1 .274 0l.258.774c.115.346.386.617.732.732l.774.258a.145.145 0 0 1 0 .274l-.774.258a1.16 1.16 0 0 0-.732.732l-.258.774a.145.145 0 0 1-.274 0l-.258-.774a1.16 1.16 0 0 0-.732-.732L9.1 2.137a.145.145 0 0 1 0-.274l.774-.258c.346-.115.617-.386.732-.732z"/></svg>',
+  'Chase': '<svg class="dropdown-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M11.534 7h3.932a.25.25 0 0 1 .192.41l-1.966 2.36a.25.25 0 0 1-.384 0l-1.966-2.36a.25.25 0 0 1 .192-.41m-11 2h3.932a.25.25 0 0 0 .192-.41L2.692 6.23a.25.25 0 0 0-.384 0L.342 8.59A.25.25 0 0 0 .534 9"/><path fill-rule="evenodd" d="M8 3c-1.552 0-2.94.707-3.857 1.818a.5.5 0 1 1-.771-.636A6.002 6.002 0 0 1 13.917 7H12.9A5 5 0 0 0 8 3M3.1 9a5.002 5.002 0 0 0 8.757 2.182.5.5 0 1 1 .771.636A6.002 6.002 0 0 1 2.083 9z"/></svg>',
+  'Hazard': '<svg class="dropdown-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M7.938 2.016A.13.13 0 0 1 8.002 2a.13.13 0 0 1 .063.016.15.15 0 0 1 .054.057l6.857 11.667c.036.06.035.124.002.183a.2.2 0 0 1-.054.06.1.1 0 0 1-.066.017H1.146a.1.1 0 0 1-.066-.017.2.2 0 0 1-.054-.06.18.18 0 0 1 .002-.183L7.884 2.073a.15.15 0 0 1 .054-.057m1.044-.45a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767z"/><path d="M7.002 12a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 5.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z"/></svg>',
+  'X-lights': '<svg class="dropdown-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="m7.646 9.354-3.792 3.792a.5.5 0 0 0 .353.854h7.586a.5.5 0 0 0 .354-.854L8.354 9.354a.5.5 0 0 0-.708 0"/><path d="M11.414 11H14.5a.5.5 0 0 0 .5-.5v-7a.5.5 0 0 0-.5-.5h-13a.5.5 0 0 0-.5.5v7a.5.5 0 0 0 .5.5h3.086l-1 1H1.5A1.5 1.5 0 0 1 0 10.5v-7A1.5 1.5 0 0 1 1.5 2h13A1.5 1.5 0 0 1 16 3.5v7a1.5 1.5 0 0 1-1.5 1.5h-2.086z"/></svg>'
 };
 
 // Initialize when DOM is ready
@@ -23,21 +50,25 @@ document.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
   initializeColorPicker();
   fetchInitialState();
+  fetchSettings();
+  initializePWA();
 });
 
 // Cache DOM elements for better performance
 function initializeElements() {
   elements.loader = document.getElementById('loader');
-  elements.effects = document.querySelectorAll('.effect-btn');
-  elements.dropdownToggle = document.querySelector('.dropdown-toggle');
-  elements.effectButtons = document.querySelectorAll('.effect-btn');
-  elements.effectDropdown = document.querySelector('.effect-dropdown');
+  elements.effects = document.querySelectorAll(SELECTORS.EFFECT_BTN);
+  elements.dropdownToggle = document.querySelector(SELECTORS.DROPDOWN_TOGGLE);
+  elements.effectButtons = document.querySelectorAll(SELECTORS.EFFECT_BTN);
+  elements.effectDropdown = document.querySelector(SELECTORS.EFFECT_DROPDOWN);
   elements.popupBox = document.getElementById('popupBox');
   elements.popupCloseBtn = document.getElementById('popupCloseBtn');
   elements.popupTitle = document.getElementById('popupTitle');
   elements.popupDesc = document.getElementById('popupDesc');
   elements.swatchGrid = document.getElementById('swatch-grid');
   elements.notification = document.getElementById('notification');
+  elements.effectSpeedSlider = document.getElementById('effect-speed');
+  elements.effectSpeedValue = document.getElementById('effect-speed-value');
 }
 
 // Setup all event listeners
@@ -65,10 +96,9 @@ function setupEventListeners() {
   elements.swatchGrid.addEventListener('click', handleSwatchClick);
 
   // Effect speed slider
-  const effectSpeedSlider = document.getElementById('effect-speed');
-  if (effectSpeedSlider) {
-    effectSpeedSlider.addEventListener('input', handleEffectSpeedChange);
-    effectSpeedSlider.addEventListener('change', handleEffectSpeedChange);
+  if (elements.effectSpeedSlider) {
+    elements.effectSpeedSlider.addEventListener('input', handleEffectSpeedChange);
+    elements.effectSpeedSlider.addEventListener('change', handleEffectSpeedChange);
   }
 
   // Notification swipe events
@@ -86,32 +116,43 @@ function initializeColorPicker() {
     color: "#ff0000",
   });
 
-  colorPicker.on('color:change', handleColorChange);
+  // Only send color when user releases the picker
+  colorPicker.on('input:end', handleColorChange);
   window.colorPicker = colorPicker;
 }
 
-// Fetch initial LED state
-function fetchInitialState() {
-  fetch('/getState')
-    .then(res => {
-      if (!res.ok) throw new Error(res.status);
-      return res.json();
-    })
-    .then(data => {
-      if (data.color && colorPicker) {
-        colorPicker.color.set(data.color);
-      }
-
-      if (data.effect) {
-        setActiveEffect(data.effect);
-        updateQuickActionButtonsFromEffect(data.effect);
-      }
-    })
-    .catch(err => {
-      console.error(`Failed to fetch initial LED state: ${err.message}`);
-      showNotification(`Failed to fetch LED state: ${err.message}`, true, 'Connection Error');
-    });
+// Generic fetch function with error handling
+async function fetchWithErrorHandling(url, errorType) {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(res.status);
+    return res;
+  } catch (err) {
+    console.error(`${errorType} failed: ${err.message}`);
+    showNotification(`${errorType} failed: ${err.message}`, true, `${errorType} Error`);
+    throw err;
+  }
 }
+
+// Fetch initial LED state
+async function fetchInitialState() {
+  try {
+    const res = await fetchWithErrorHandling('/getState', 'Fetch initial LED state');
+    const data = await res.json();
+    
+    if (data.color && colorPicker) {
+      colorPicker.color.set(data.color);
+    }
+
+    if (data.effect) {
+      setActiveEffect(data.effect);
+      updateQuickActionButtonsFromEffect(data.effect);
+    }
+  } catch (err) {
+    // Error already handled by fetchWithErrorHandling
+  }
+}
+
 
 // Handle effect button clicks
 function handleEffectClick() {
@@ -124,7 +165,7 @@ function handleEffectClick() {
   if (selectedEffect.toLowerCase().includes('x-lights')) {
     openPopup(
       'X-Lights/DDP Mode Active',
-      'You\'ve selected X-Lights/DDP. This takes over the whole strip and disables brake and indicators. Waiting for data stream…'
+      'Full strip control mode - disables other functions. Waiting for data...'
     );
   } else {
     closePopup();
@@ -165,13 +206,11 @@ function handleColorChange(color) {
 
 // Handle effect speed change
 function handleEffectSpeedChange() {
-  const slider = document.getElementById('effect-speed');
-  const valueDisplay = document.getElementById('effect-speed-value');
-  const speed = slider.value;
+  const speed = elements.effectSpeedSlider.value;
   
   // Update the display value
-  if (valueDisplay) {
-    valueDisplay.textContent = speed;
+  if (elements.effectSpeedValue) {
+    elements.effectSpeedValue.textContent = speed;
   }
   
   // Send the speed to the server
@@ -184,53 +223,46 @@ function handleSwatchClick(e) {
     const color = e.target.dataset.color;
     if (color && colorPicker) {
       colorPicker.color.set(color);
+      // Send color immediately for swatch clicks
+      sendColor(color);
     }
   }
 }
 
 // Send effect to server
-function sendEffect(effect) {
+async function sendEffect(effect) {
   console.log('Selected effect:', effect);
-  fetch(`/setEffect?effect=${encodeURIComponent(effect)}`)
-    .then(res => {
-      if (!res.ok) throw new Error(res.status);
-      console.log(`Effect sent: ${effect}`);
-    })
-    .catch(err => {
-      console.error(`Effect send failed: ${err.message}`);
-      showNotification(`Effect send failed: ${err.message}`, true, 'Effect Error');
-    });
+  try {
+    await fetchWithErrorHandling(`/setEffect?effect=${encodeURIComponent(effect)}`, 'Effect send');
+    console.log(`Effect sent: ${effect}`);
+  } catch (err) {
+    // Error already handled by fetchWithErrorHandling
+  }
 }
 
 // Send color to server
-function sendColor(color) {
-  fetch(`/setColor?color=${encodeURIComponent(color)}`)
-    .then(res => {
-      if (!res.ok) throw new Error(res.status);
-      console.log(`Color sent: ${color}`);
-    })
-    .catch(err => {
-      console.error(`Color send failed: ${err.message}`);
-      showNotification(`Color send failed: ${err.message}`, true, 'Color Error');
-    });
+async function sendColor(color) {
+  try {
+    await fetchWithErrorHandling(`/setColor?color=${encodeURIComponent(color)}`, 'Color send');
+    console.log(`Color sent: ${color}`);
+  } catch (err) {
+    // Error already handled by fetchWithErrorHandling
+  }
 }
 
 // Send effect speed to server
-function sendEffectSpeed(speed) {
-  fetch(`/setEffectSpeed?speed=${encodeURIComponent(speed)}`)
-    .then(res => {
-      if (!res.ok) throw new Error(res.status);
-      console.log(`Effect speed sent: ${speed}`);
-    })
-    .catch(err => {
-      console.error(`Effect speed send failed: ${err.message}`);
-      showNotification(`Effect speed send failed: ${err.message}`, true, 'Speed Error');
-    });
+async function sendEffectSpeed(speed) {
+  try {
+    await fetchWithErrorHandling(`/setEffectSpeed?speed=${encodeURIComponent(speed)}`, 'Effect speed send');
+    console.log(`Effect speed sent: ${speed}`);
+  } catch (err) {
+    // Error already handled by fetchWithErrorHandling
+  }
 }
 
 // Set active effect
 function setActiveEffect(effect) {
-  const activeBtn = document.querySelector(`.effect-btn[data-effect="${effect}"]`);
+  const activeBtn = document.querySelector(`${SELECTORS.EFFECT_BTN}[data-effect="${effect}"]`);
   if (activeBtn) {
     activeBtn.classList.add('active');
     updateDropdownToggle(effect);
@@ -239,17 +271,7 @@ function setActiveEffect(effect) {
 
 // Update dropdown toggle with icon and text
 function updateDropdownToggle(effect) {
-  const effectIcons = {
-    'Solid': '<svg class="dropdown-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><circle cx="8" cy="8" r="8"/></svg>',
-    'Rainbow': '<svg class="dropdown-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M8 4.5a7 7 0 0 0-7 7 .5.5 0 0 1-1 0 8 8 0 1 1 16 0 .5.5 0 0 1-1 0 7 7 0 0 0-7-7m0 2a5 5 0 0 0-5 5 .5.5 0 0 1-1 0 6 6 0 1 1 12 0 .5.5 0 0 1-1 0 5 5 0 0 0-5-5m0 2a3 3 0 0 0-3 3 .5.5 0 0 1-1 0 4 4 0 1 1 8 0 .5.5 0 0 1-1 0 3 3 0 0 0-3-3m0 2a1 1 0 0 0-1 1 .5.5 0 0 1-1 0 2 2 0 1 1 4 0 .5.5 0 0 1-1 0 1 1 0 0 0-1-1"/></svg>',
-    'Pulse': '<svg class="dropdown-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M6 2a.5.5 0 0 1 .47.33L10 12.036l1.53-4.208A.5.5 0 0 1 12 7.5h3.5a.5.5 0 0 1 0 1h-3.15l-1.88 5.17a.5.5 0 0 1-.94 0L6 3.964 4.47 8.171A.5.5 0 0 1 4 8.5H.5a.5.5 0 0 1 0-1h3.15l1.88-5.17A.5.5 0 0 1 6 2"/></svg>',
-    'Sparkle': '<svg class="dropdown-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M7.657 6.247c.11-.33.576-.33.686 0l.645 1.937a2.89 2.89 0 0 0 1.829 1.828l1.936.645c.33.11.33.576 0 .686l-1.937.645a2.89 2.89 0 0 0-1.828 1.829l-.645 1.936a.361.361 0 0 1-.686 0l-.645-1.937a2.89 2.89 0 0 0-1.828-1.828l-1.937-.645a.361.361 0 0 1 0-.686l1.937-.645a2.89 2.89 0 0 0 1.828-1.828zM3.794 1.148a.217.217 0 0 1 .412 0l.387 1.162c.173.518.579.924 1.097 1.097l1.162.387a.217.217 0 0 1 0 .412l-1.162.387A1.73 1.73 0 0 0 4.593 5.69l-.387 1.162a.217.217 0 0 1-.412 0L3.407 5.69A1.73 1.73 0 0 0 2.31 4.593l-1.162-.387a.217.217 0 0 1 0-.412l1.162-.387A1.73 1.73 0 0 0 3.407 2.31zM10.863.099a.145.145 0 0 1 .274 0l.258.774c.115.346.386.617.732.732l.774.258a.145.145 0 0 1 0 .274l-.774.258a1.16 1.16 0 0 0-.732.732l-.258.774a.145.145 0 0 1-.274 0l-.258-.774a1.16 1.16 0 0 0-.732-.732L9.1 2.137a.145.145 0 0 1 0-.274l.774-.258c.346-.115.617-.386.732-.732z"/></svg>',
-    'Chase': '<svg class="dropdown-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M11.534 7h3.932a.25.25 0 0 1 .192.41l-1.966 2.36a.25.25 0 0 1-.384 0l-1.966-2.36a.25.25 0 0 1 .192-.41m-11 2h3.932a.25.25 0 0 0 .192-.41L2.692 6.23a.25.25 0 0 0-.384 0L.342 8.59A.25.25 0 0 0 .534 9"/><path fill-rule="evenodd" d="M8 3c-1.552 0-2.94.707-3.857 1.818a.5.5 0 1 1-.771-.636A6.002 6.002 0 0 1 13.917 7H12.9A5 5 0 0 0 8 3M3.1 9a5.002 5.002 0 0 0 8.757 2.182.5.5 0 1 1 .771.636A6.002 6.002 0 0 1 2.083 9z"/></svg>',
-    'Hazard': '<svg class="dropdown-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M7.938 2.016A.13.13 0 0 1 8.002 2a.13.13 0 0 1 .063.016.15.15 0 0 1 .054.057l6.857 11.667c.036.06.035.124.002.183a.2.2 0 0 1-.054.06.1.1 0 0 1-.066.017H1.146a.1.1 0 0 1-.066-.017.2.2 0 0 1-.054-.06.18.18 0 0 1 .002-.183L7.884 2.073a.15.15 0 0 1 .054-.057m1.044-.45a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767z"/><path d="M7.002 12a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 5.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z"/></svg>',
-    'X-lights': '<svg class="dropdown-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="m7.646 9.354-3.792 3.792a.5.5 0 0 0 .353.854h7.586a.5.5 0 0 0 .354-.854L8.354 9.354a.5.5 0 0 0-.708 0"/><path d="M11.414 11H14.5a.5.5 0 0 0 .5-.5v-7a.5.5 0 0 0-.5-.5h-13a.5.5 0 0 0-.5.5v7a.5.5 0 0 0 .5.5h3.086l-1 1H1.5A1.5 1.5 0 0 1 0 10.5v-7A1.5 1.5 0 0 1 1.5 2h13A1.5 1.5 0 0 1 16 3.5v7a1.5 1.5 0 0 1-1.5 1.5h-2.086z"/></svg>'
-  };
-  
-  const icon = effectIcons[effect] || effectIcons['Solid'];
+  const icon = EFFECT_ICONS[effect] || EFFECT_ICONS['Solid'];
   const effectName = effect === 'X-lights' ? 'X-Lights/DDP' : effect;
   
   elements.dropdownToggle.innerHTML = `
@@ -285,9 +307,7 @@ function closePopup() {
 
 // Show notification
 function showNotification(message, isError = false, title = null) {
-  if (!isError) return;
-  
-  if (!elements.notification) return;
+  if (!isError || !elements.notification) return;
   
   const notificationContent = title 
     ? `
@@ -381,7 +401,7 @@ function handleTouchEnd(e) {
 }
 
 // Quick action function
-function quickAction(action) {
+async function quickAction(action) {
   let effect = '';
   let color = '';
   
@@ -407,31 +427,23 @@ function quickAction(action) {
   
   // Set effect first, then color
   if (effect) {
-    fetch(`/setEffect?effect=${encodeURIComponent(effect)}`)
-      .then(res => {
-        if (!res.ok) throw new Error(res.status);
-        console.log(`Quick action effect sent: ${effect}`);
-        
-        if (color) {
-          return fetch(`/setColor?color=${encodeURIComponent(color)}`);
-        }
-      })
-      .then(res => {
-        if (color && res) {
-          if (!res.ok) throw new Error(res.status);
-          console.log(`Quick action color sent: ${color}`);
-        }
-      })
-      .catch(err => {
-        console.error(`Quick action failed: ${err.message}`);
-        showNotification(`Quick action failed: ${err.message}`, true, 'Quick Action Error');
-      });
+    try {
+      await fetchWithErrorHandling(`/setEffect?effect=${encodeURIComponent(effect)}`, 'Quick action effect');
+      console.log(`Quick action effect sent: ${effect}`);
+      
+      if (color) {
+        await fetchWithErrorHandling(`/setColor?color=${encodeURIComponent(color)}`, 'Quick action color');
+        console.log(`Quick action color sent: ${color}`);
+      }
+    } catch (err) {
+      // Error already handled by fetchWithErrorHandling
+    }
   }
   
   // Update UI
-  const activeBtn = document.querySelector(`.effect-btn[data-effect="${effect}"]`);
+  const activeBtn = document.querySelector(`${SELECTORS.EFFECT_BTN}[data-effect="${effect}"]`);
   if (activeBtn) {
-    document.querySelectorAll('.effect-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll(SELECTORS.EFFECT_BTN).forEach(b => b.classList.remove('active'));
     activeBtn.classList.add('active');
     updateDropdownToggle(effect);
   }
@@ -446,11 +458,11 @@ function quickAction(action) {
 
 // Update quick action button states
 function updateQuickActionButtons(activeAction) {
-  document.querySelectorAll('.action-btn').forEach(btn => {
+  document.querySelectorAll(SELECTORS.ACTION_BTN).forEach(btn => {
     btn.classList.remove('active');
   });
   
-  const activeBtn = document.querySelector(`.action-btn[onclick*="${activeAction}"]`);
+  const activeBtn = document.querySelector(`${SELECTORS.ACTION_BTN}[onclick*="${activeAction}"]`);
   if (activeBtn) {
     activeBtn.classList.add('active');
   }
@@ -491,4 +503,158 @@ window.addEventListener("load", () => {
     }, 500);
   }
 });
+
+// PWA Functions
+function initializePWA() {
+  // Register service worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js')
+      .then((registration) => {
+        console.log('Service Worker registered successfully:', registration);
+        
+        // Check for updates
+        registration.addEventListener('updatefound', () => {
+          const newWorker = registration.installing;
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              showNotification('New version available! Refresh to update.', 'info');
+            }
+          });
+        });
+      })
+      .catch((error) => {
+        console.error('Service Worker registration failed:', error);
+      });
+  }
+
+  // Handle beforeinstallprompt event
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    showInstallPrompt();
+  });
+
+  // Handle app installed event
+  window.addEventListener('appinstalled', (evt) => {
+    isPWAInstalled = true;
+    console.log('PWA installed successfully');
+    showNotification('App installed successfully!', 'success');
+  });
+
+  // Handle service worker messages
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', (event) => {
+      if (event.data && event.data.type === 'SYNC_COMPLETE') {
+        console.log('Background sync completed');
+      }
+    });
+  }
+
+  // Check if app is running in standalone mode (installed)
+  if (window.matchMedia('(display-mode: standalone)').matches || 
+      window.navigator.standalone === true) {
+    isPWAInstalled = true;
+    console.log('App is running in standalone mode');
+  }
+  
+  // Check if we should show installation guide
+  checkAndShowInstallGuide();
+}
+
+function showInstallPrompt() {
+  // Create install button if it doesn't exist
+  if (!document.getElementById('install-btn')) {
+    const installBtn = document.createElement('button');
+    installBtn.id = 'install-btn';
+    installBtn.className = 'install-btn backdrop-blur';
+    installBtn.innerHTML = `
+      <svg class="install-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
+        <path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0M1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0m4.879-2.773 4.264 2.559a.25.25 0 0 1 0 .428l-4.264 2.559A.25.25 0 0 1 6 10.559V5.442a.25.25 0 0 1 .379-.214"/>
+      </svg>
+      Install App
+    `;
+    
+    installBtn.addEventListener('click', installPWA);
+    
+    // Add to the top of the page
+    const nav = document.querySelector('.bottom-nav');
+    if (nav) {
+      nav.parentNode.insertBefore(installBtn, nav);
+    }
+  }
+}
+
+async function installPWA() {
+  if (!deferredPrompt) {
+    showNotification('Installation not available', 'error');
+    return;
+  }
+
+  try {
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    
+    if (outcome === 'accepted') {
+      console.log('User accepted the install prompt');
+      showNotification('Installing app...', 'info');
+    } else {
+      console.log('User dismissed the install prompt');
+      showNotification('Installation cancelled', 'info');
+    }
+    
+    deferredPrompt = null;
+    
+    // Remove install button
+    const installBtn = document.getElementById('install-btn');
+    if (installBtn) {
+      installBtn.remove();
+    }
+  } catch (error) {
+    console.error('Installation failed:', error);
+    showNotification('Installation failed', 'error');
+  }
+}
+
+// Enhanced notification function for PWA
+function showNotification(message, type = 'info') {
+  if (!elements.notification) return;
+  
+  elements.notification.textContent = message;
+  elements.notification.className = `notification backdrop-blur ${type}`;
+  elements.notification.style.display = 'block';
+  
+  // Auto-hide after 3 seconds
+  setTimeout(() => {
+    elements.notification.style.display = 'none';
+  }, 3000);
+}
+
+// Installation guide functions
+function showInstallGuide() {
+  const guide = document.getElementById('install-guide');
+  if (guide) {
+    guide.style.display = 'flex';
+  }
+}
+
+function closeInstallGuide() {
+  const guide = document.getElementById('install-guide');
+  if (guide) {
+    guide.style.display = 'none';
+  }
+}
+
+// Show installation guide for iPhone users
+function checkAndShowInstallGuide() {
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                      window.navigator.standalone === true;
+  
+  if (isIOS && !isStandalone && !isPWAInstalled) {
+    // Show guide after a short delay
+    setTimeout(() => {
+      showInstallGuide();
+    }, 2000);
+  }
+}
 
