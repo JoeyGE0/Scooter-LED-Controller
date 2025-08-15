@@ -20,7 +20,7 @@ In my setup, it uses the scooter’s 12V signals for turn indicators, brake ligh
 
 <p align="left">
   <a href="https://joeyge0.github.io/Scooter-LED-Controller/" target="_blank" rel="noopener noreferrer">
-    <img src="DEV%20UI.png" alt="DEV UI" width="340" />
+    <img src="Images/DEV%20UI.png" alt="DEV UI" width="340" />
   </a>
 </p>
 
