@@ -2,9 +2,6 @@
 let colorPicker;
 let lastColor = '#ff0000';
 
-// PWA variables
-let isPWAInstalled = false;
-
 // DOM elements cache
 const elements = {
   loader: null,
@@ -50,7 +47,6 @@ document.addEventListener('DOMContentLoaded', () => {
   initializeColorPicker();
   fetchInitialState();
   fetchSettings();
-  initializePWA();
 });
 
 // Cache DOM elements for better performance
@@ -120,15 +116,10 @@ function initializeColorPicker() {
   window.colorPicker = colorPicker;
 }
 
-// ESP32 API base URL
-const ESP32_API_BASE = 'http://192.168.4.1';
-
 // Generic fetch function with error handling
 async function fetchWithErrorHandling(url, errorType) {
   try {
-    // If it's a relative URL, prepend the ESP32 API base
-    const fullUrl = url.startsWith('http') ? url : `${ESP32_API_BASE}${url}`;
-    const res = await fetch(fullUrl);
+    const res = await fetch(url);
     if (!res.ok) throw new Error(res.status);
     return res;
   } catch (err) {
@@ -311,7 +302,7 @@ function closePopup() {
 
 // Show notification
 function showNotification(message, isError = false, title = null) {
-  if (!elements.notification) return;
+  if (!isError || !elements.notification) return;
   
   const notificationContent = title 
     ? `
@@ -507,54 +498,4 @@ window.addEventListener("load", () => {
     }, 500);
   }
 });
-
-// PWA Functions
-function initializePWA() {
-  // Register service worker
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js')
-      .then((registration) => {
-        console.log('Service Worker registered successfully:', registration);
-        
-        // Check for updates
-        registration.addEventListener('updatefound', () => {
-          const newWorker = registration.installing;
-          newWorker.addEventListener('statechange', () => {
-            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              showNotification('New version available! Refresh to update.', 'info');
-            }
-          });
-        });
-      })
-      .catch((error) => {
-        console.error('Service Worker registration failed:', error);
-      });
-  }
-
-
-
-  // Handle service worker messages
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.addEventListener('message', (event) => {
-      if (event.data && event.data.type === 'SYNC_COMPLETE') {
-        console.log('Background sync completed');
-      }
-    });
-  }
-
-  // Check if app is running in standalone mode (installed)
-  if (window.matchMedia('(display-mode: standalone)').matches || 
-      window.navigator.standalone === true) {
-    isPWAInstalled = true;
-    console.log('App is running in standalone mode');
-  }
-  
-
-}
-
-
-
-
-
-
 
