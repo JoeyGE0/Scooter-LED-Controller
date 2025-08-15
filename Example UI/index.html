@@ -3,33 +3,8 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Scooter LED Control</title>
-
-  <!-- PWA Meta Tags -->
-  <meta name="theme-color" content="#6366f1">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="LED Control">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="description" content="Control your scooter LED strip effects and colors">
-
-  <!-- iPhone Specific Meta Tags -->
-  <meta name="format-detection" content="telephone=no">
-  <meta name="apple-touch-fullscreen" content="yes">
-
-  <!-- PWA Icons -->
-  <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32x32.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="icons/icon-16x16.png">
-  <link rel="apple-touch-icon" href="icons/icon-192x192.png">
-  <link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152x152.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-192x192.png">
-  <link rel="apple-touch-icon" sizes="167x167" href="icons/icon-152x152.png">
-
-  <!-- PWA Manifest -->
-  <link rel="manifest" href="manifest.json">
-
-  <!-- Preload critical resources -->
   <link rel="preload" href="styles.css" as="style">
   <link rel="preload" href="iro.min.js" as="script">
   <link rel="stylesheet" href="styles.css">
@@ -210,28 +185,6 @@
     </div>
 
     <div id="notification" class="notification backdrop-blur"></div>
-
-    <!-- Installation Guide Modal -->
-    <div id="install-guide" class="install-guide backdrop-blur" style="display: none;">
-      <div class="install-guide-content">
-        <h3>Install App on iPhone</h3>
-        <div class="install-steps">
-          <div class="step">
-            <span class="step-number">1</span>
-            <p>Tap the <strong>Share</strong> button <span class="share-icon">⎋</span></p>
-          </div>
-          <div class="step">
-            <span class="step-number">2</span>
-            <p>Scroll down and tap <strong>"Add to Home Screen"</strong></p>
-          </div>
-          <div class="step">
-            <span class="step-number">3</span>
-            <p>Tap <strong>"Add"</strong> to install</p>
-          </div>
-        </div>
-        <button onclick="closeInstallGuide()" class="close-guide-btn">Got it!</button>
-      </div>
-    </div>
   </main>
 
   <script src="iro.min.js"></script>
