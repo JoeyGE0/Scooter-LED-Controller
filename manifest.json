@@ -2,12 +2,12 @@
   "name": "Scooter LED Control",
   "short_name": "LED Control",
   "description": "Control your scooter LED strip effects and colors",
-  "start_url": "/",
+  "start_url": "/Scooter-LED-Controller/",
   "display": "standalone",
-  "background_color": "#1a1a1a",
-  "theme_color": "#6366f1",
+  "background_color": "#0a0a0a",
+  "theme_color": "#4db8ff",
   "orientation": "portrait",
-  "scope": "/",
+  "scope": "/Scooter-LED-Controller/",
   "lang": "en",
   "icons": [
     {
