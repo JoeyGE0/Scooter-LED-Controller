@@ -3,7 +3,6 @@ let colorPicker;
 let lastColor = '#ff0000';
 
 // PWA variables
-let deferredPrompt;
 let isPWAInstalled = false;
 
 // DOM elements cache
@@ -121,10 +120,15 @@ function initializeColorPicker() {
   window.colorPicker = colorPicker;
 }
 
+// ESP32 API base URL
+const ESP32_API_BASE = 'http://192.168.4.1';
+
 // Generic fetch function with error handling
 async function fetchWithErrorHandling(url, errorType) {
   try {
-    const res = await fetch(url);
+    // If it's a relative URL, prepend the ESP32 API base
+    const fullUrl = url.startsWith('http') ? url : `${ESP32_API_BASE}${url}`;
+    const res = await fetch(fullUrl);
     if (!res.ok) throw new Error(res.status);
     return res;
   } catch (err) {
@@ -527,19 +531,7 @@ function initializePWA() {
       });
   }
 
-  // Handle beforeinstallprompt event
-  window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-    showInstallPrompt();
-  });
 
-  // Handle app installed event
-  window.addEventListener('appinstalled', (evt) => {
-    isPWAInstalled = true;
-    console.log('PWA installed successfully');
-    showPWANotification('App installed successfully!', 'success');
-  });
 
   // Handle service worker messages
   if ('serviceWorker' in navigator) {
@@ -557,104 +549,12 @@ function initializePWA() {
     console.log('App is running in standalone mode');
   }
   
-  // Check if we should show installation guide
-  checkAndShowInstallGuide();
+
 }
 
-function showInstallPrompt() {
-  // Create install button if it doesn't exist
-  if (!document.getElementById('install-btn')) {
-    const installBtn = document.createElement('button');
-    installBtn.id = 'install-btn';
-    installBtn.className = 'install-btn backdrop-blur';
-    installBtn.innerHTML = `
-      <svg class="install-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
-        <path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0M1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0m4.879-2.773 4.264 2.559a.25.25 0 0 1 0 .428l-4.264 2.559A.25.25 0 0 1 6 10.559V5.442a.25.25 0 0 1 .379-.214"/>
-      </svg>
-      Install App
-    `;
-    
-    installBtn.addEventListener('click', installPWA);
-    
-    // Add to the top of the page
-    const nav = document.querySelector('.bottom-nav');
-    if (nav) {
-      nav.parentNode.insertBefore(installBtn, nav);
-    }
-  }
-}
 
-async function installPWA() {
-  if (!deferredPrompt) {
-    showPWANotification('Installation not available', 'error');
-    return;
-  }
 
-  try {
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    
-    if (outcome === 'accepted') {
-      console.log('User accepted the install prompt');
-      showPWANotification('Installing app...', 'info');
-    } else {
-      console.log('User dismissed the install prompt');
-      showPWANotification('Installation cancelled', 'info');
-    }
-    
-    deferredPrompt = null;
-    
-    // Remove install button
-    const installBtn = document.getElementById('install-btn');
-    if (installBtn) {
-      installBtn.remove();
-    }
-  } catch (error) {
-    console.error('Installation failed:', error);
-    showPWANotification('Installation failed', 'error');
-  }
-}
 
-// Enhanced notification function for PWA
-function showPWANotification(message, type = 'info') {
-  if (!elements.notification) return;
-  
-  elements.notification.textContent = message;
-  elements.notification.className = `notification backdrop-blur ${type}`;
-  elements.notification.style.display = 'block';
-  
-  // Auto-hide after 3 seconds
-  setTimeout(() => {
-    elements.notification.style.display = 'none';
-  }, 3000);
-}
 
-// Installation guide functions
-function showInstallGuide() {
-  const guide = document.getElementById('install-guide');
-  if (guide) {
-    guide.style.display = 'flex';
-  }
-}
 
-function closeInstallGuide() {
-  const guide = document.getElementById('install-guide');
-  if (guide) {
-    guide.style.display = 'none';
-  }
-}
-
-// Show installation guide for iPhone users
-function checkAndShowInstallGuide() {
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
-                      window.navigator.standalone === true;
-  
-  if (isIOS && !isStandalone && !isPWAInstalled) {
-    // Show guide after a short delay
-    setTimeout(() => {
-      showInstallGuide();
-    }, 2000);
-  }
-}
 
