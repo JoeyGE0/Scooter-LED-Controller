@@ -307,7 +307,7 @@ function closePopup() {
 
 // Show notification
 function showNotification(message, isError = false, title = null) {
-  if (!isError || !elements.notification) return;
+  if (!elements.notification) return;
   
   const notificationContent = title 
     ? `
@@ -538,7 +538,7 @@ function initializePWA() {
   window.addEventListener('appinstalled', (evt) => {
     isPWAInstalled = true;
     console.log('PWA installed successfully');
-    showNotification('App installed successfully!', 'success');
+    showPWANotification('App installed successfully!', 'success');
   });
 
   // Handle service worker messages
@@ -586,7 +586,7 @@ function showInstallPrompt() {
 
 async function installPWA() {
   if (!deferredPrompt) {
-    showNotification('Installation not available', 'error');
+    showPWANotification('Installation not available', 'error');
     return;
   }
 
@@ -596,10 +596,10 @@ async function installPWA() {
     
     if (outcome === 'accepted') {
       console.log('User accepted the install prompt');
-      showNotification('Installing app...', 'info');
+      showPWANotification('Installing app...', 'info');
     } else {
       console.log('User dismissed the install prompt');
-      showNotification('Installation cancelled', 'info');
+      showPWANotification('Installation cancelled', 'info');
     }
     
     deferredPrompt = null;
@@ -611,12 +611,12 @@ async function installPWA() {
     }
   } catch (error) {
     console.error('Installation failed:', error);
-    showNotification('Installation failed', 'error');
+    showPWANotification('Installation failed', 'error');
   }
 }
 
 // Enhanced notification function for PWA
-function showNotification(message, type = 'info') {
+function showPWANotification(message, type = 'info') {
   if (!elements.notification) return;
   
   elements.notification.textContent = message;
