@@ -1,3 +1,11 @@
+// Version 1.0 Beta 3
+// Revision: 1.2
+// Status: Beta - Testing phase, use with caution
+// Author: JoeyGE0
+// Description: ESP32 LED Strip Controller for vehicle lighting
+// Features: WiFi control, DDP protocol, OTA updates, brake/indicator lights
+// Hardware: ESP32 + WS2815 LED strip
+
 // ===== INCLUDES =====
 #include <Arduino.h>
 #include <FastLED.h>           // For LED Control
@@ -5,11 +13,17 @@
 #include <WiFi.h>              // For WiFi functionality
 #include <DNSServer.h>         // For captive portal
 #include <WebServer.h>         // For web server
-#include <ArduinoOTA.h>        // For OTA updates
+#include "ArduinoOTA.h"        // For OTA updates
 #include <Update.h>            // For OTA firmware updates
 #include <Preferences.h>       // For non-volatile storage
 #include "UI.h"                // Main UI HTML
 #include "Settings.h"          // Settings page HTML
+#include "styles.h"            // Main page CSS
+#include "script.h"            // Main page JavaScript
+#include "iro.h"               // iro.min.js library (Colour picker)
+#include "settings-styles.h"   // Settings page CSS
+#include "settings-script.h"   // Settings page JavaScript
+#include "manifest.h"          // Web app manifest
 
 // ===== FUNCTION DECLARATIONS =====
 // Web server handlers
@@ -22,8 +36,17 @@ void handleGetGpioStates();
 void handleUpdate();
 void handleFactoryReset();
 
+// Static file handlers
+void handleStyles();
+void handleScript();
+void handleIro();
+void handleSettingsStyles();
+void handleSettingsScript();
+void handleManifest();
+
 // Settings management
-void loadSavedSettings();
+void loadEssentialSettings();
+void loadAllSettings();
 void printLoadedSettings();
 void parseAndApplySettings(String json);
 void applyRuntimeSettings(String json, int (*extractInt)(const String&, const String&), bool (*extractBool)(const String&, const String&), String (*extractString)(const String&, const String&));
@@ -39,6 +62,7 @@ void initializeOTA();
 
 // Main loop functions
 void runBootEffect();
+void handleBackgroundLoading();
 void handleDDP();
 void updateInputStates();
 void updateColorTransition();
@@ -62,9 +86,41 @@ void runPulseEffect();
 void runChaseEffect();
 void runHazardEffect();
 
+// Status LED control
+void updateStatusLed();
+
 // ===== HARDWARE CONFIGURATION =====
 // LED Strip Configuration
 #define DATA_PIN        18     // LED data output pin
+
+// ===== EFFECT ENUM SYSTEM =====
+enum EffectType { RAINBOW, SOLID, SPARKLE, PULSE, CHASE, HAZARD, XLIGHTS };
+EffectType currentEffect = RAINBOW;
+
+// Conversion functions for web compatibility
+String effectToString(EffectType effect) {
+  switch(effect) {
+    case RAINBOW: return "rainbow";
+    case SOLID: return "solid";
+    case SPARKLE: return "sparkle";
+    case PULSE: return "pulse";
+    case CHASE: return "chase";
+    case HAZARD: return "Hazard";
+    case XLIGHTS: return "X-lights";
+    default: return "rainbow";
+  }
+}
+
+EffectType stringToEffect(String str) {
+  if (str.equalsIgnoreCase("rainbow")) return RAINBOW;
+  if (str.equalsIgnoreCase("solid")) return SOLID;
+  if (str.equalsIgnoreCase("sparkle")) return SPARKLE;
+  if (str.equalsIgnoreCase("pulse")) return PULSE;
+  if (str.equalsIgnoreCase("chase")) return CHASE;
+  if (str.equalsIgnoreCase("Hazard")) return HAZARD;
+  if (str.equalsIgnoreCase("X-lights")) return XLIGHTS;
+  return RAINBOW; // default
+}
 
 // Runtime LED Configuration (will be loaded from preferences)
 uint16_t NUM_LEDS = 174;           // Total LED count
@@ -77,6 +133,7 @@ uint16_t MAIN_LEN;                 // Calculated main segment length
 #define BRAKE_PIN       19     // Brake input pin (HIGH/LOW)
 #define LEFT_PIN        23     // Left indicator input pin (HIGH/LOW)
 #define RIGHT_PIN       33     // Right indicator input pin (HIGH/LOW)
+#define STATUS_LED_PIN  17     // Status LED pin (built-in ESP32 LED)
 
 // Network Configuration
 #define DDP_PORT        4048   // DDP protocol port
@@ -110,7 +167,7 @@ uint16_t bootSteps = NUM_LEDS / 2;     // Steps in boot effect
 uint16_t bootStepDelay = bootDurationMs / bootSteps; // Delay per boot step
 
 // ===== GLOBAL OBJECTS =====
-CRGB leds[1000];                       // LED array (max 1000 LEDs)
+CRGB leds[300];                        // LED array (max 300 LEDs)
 WiFiUDP ddpUdp;                        // DDP UDP object
 Preferences prefs;                     // Preferences object
 DNSServer dnsServer;                   // DNS server
@@ -128,6 +185,24 @@ bool rightIndicating = false;          // Current right indicator state
 bool bootDone = false;                 // Set true to skip boot effect
 unsigned long bootLastStepTime = 0;    // Last boot step time
 int bootStep = 0;                      // Current boot step
+
+// Background Loading State
+bool backgroundLoadingComplete = false; // Whether background loading is done
+bool backgroundLoadingStarted = false;  // Whether background loading has started
+unsigned long backgroundLoadStartTime = 0; // When background loading started
+
+// Status LED State
+bool statusLedPulseActive = false;     // Whether status LED is in pulse mode
+unsigned long statusLedLastUpdate = 0; // Last status LED update time
+uint8_t statusLedBrightness = 100;     // Current status LED brightness (0-100)
+int8_t statusLedDirection = 1;         // Direction of brightness change (1 = increasing, -1 = decreasing)
+
+// Boot flash state
+bool statusLedBootFlashActive = false; // Whether boot flash pattern is active
+unsigned long statusLedBootFlashTime = 0; // Boot flash timing
+uint8_t statusLedBootFlashCount = 0;   // Number of flashes in current group
+bool statusLedBootFlashState = false;  // Current flash state (on/off)
+uint8_t statusLedBootFlashGroup = 0;   // Current flash group (0 or 1)
 
 // Background and Effect State
 uint8_t backgroundBrightness = 255;    // Brightness for background LEDs
@@ -216,45 +291,63 @@ void setup() {
   pinMode(LEFT_PIN, INPUT_PULLUP);
   pinMode(BRAKE_PIN, INPUT_PULLUP);
   pinMode(LIGHT_TOGGLE_PIN, INPUT_PULLUP);
-
-  // Initialize FastLED
-  FastLED.addLeds<WS2815, DATA_PIN, RGB>(leds, NUM_LEDS);
-  FastLED.clear();
-  FastLED.show();
+  pinMode(STATUS_LED_PIN, OUTPUT);
+  digitalWrite(STATUS_LED_PIN, LOW); // Start with LED off
 
   // Initialize preferences
   prefs.begin("leds", false);
   
-  // Load saved settings from preferences
-  loadSavedSettings();
+  // Load essential settings only (fast boot)
+  loadEssentialSettings();
   
-  // Initialize WiFi and web server
-  initializeNetwork();
+  // Initialize FastLED with loaded LED count
+  FastLED.addLeds<WS2815, DATA_PIN, RGB>(leds, NUM_LEDS);
+  FastLED.clear();
+  FastLED.show();
   
-  // Initialize DDP
-  ddpUdp.begin(DDP_PORT);
-  Serial.println("DDP listener started on port 4048");
-  
-  // Initialize OTA
-  initializeOTA();
+  // Start boot effect immediately if enabled
+  if (!bootDone) {
+    Serial.println("Starting boot effect...");
+    bootLastStepTime = millis();
+  } else {
+    Serial.println("Boot effect disabled, loading background...");
+    backgroundLoadingStarted = true;
+    backgroundLoadStartTime = millis();
+  }
   
   Serial.println("Setup complete!");
 }
 
 // ===== SETTINGS MANAGEMENT =====
-void loadSavedSettings() {
-  // Load LED count settings
+void loadEssentialSettings() {
+  // Load only essential settings for fast boot
   NUM_LEDS = prefs.getInt("totalLedCount", 174);
   BRAKE_START_LED = prefs.getInt("brakeLedStart", 70);
   BRAKE_END_LED = prefs.getInt("brakeLedEnd", 104);
   MAIN_LEN = NUM_LEDS - (BRAKE_END_LED - BRAKE_START_LED + 1);
   
-  Serial.println("Loaded LED settings:");
+  // Load boot effect settings
+  bootDone = prefs.getBool("bootDone", false);
+  bootDurationMs = prefs.getInt("bootDuration", bootDurationMs);
+  
+  // Load boot color
+  String savedBootColor = prefs.getString("bootColour", "");
+  if (savedBootColor.length() == 7 && savedBootColor[0] == '#') {
+    long number = strtol(savedBootColor.substring(1).c_str(), NULL, 16);
+    bootColor = CRGB((number >> 16) & 0xFF, (number >> 8) & 0xFF, number & 0xFF);
+  }
+  
+  // Calculate boot effect parameters
+  bootSteps = NUM_LEDS / 2;
+  bootStepDelay = bootDurationMs / bootSteps;
+  
+  Serial.println("Loaded essential settings:");
   Serial.println("  NUM_LEDS: " + String(NUM_LEDS));
-  Serial.println("  BRAKE_START_LED: " + String(BRAKE_START_LED));
-  Serial.println("  BRAKE_END_LED: " + String(BRAKE_END_LED));
-  Serial.println("  MAIN_LEN: " + String(MAIN_LEN));
+  Serial.println("  bootDone: " + String(bootDone));
+  Serial.println("  bootDurationMs: " + String(bootDurationMs));
+}
 
+void loadAllSettings() {
   // Load saved color
   String savedColor = prefs.getString("color", "");
   if (savedColor.length() == 7 && savedColor[0] == '#') {
@@ -275,18 +368,18 @@ void loadSavedSettings() {
   }
 
   // Load saved effect
-  selectedEffect = prefs.getString("effect", "rainbow");
+  String savedEffect = prefs.getString("effect", "rainbow");
+  currentEffect = stringToEffect(savedEffect);
+  selectedEffect = savedEffect; // Keep string for web compatibility
   Serial.println("Loaded saved effect: " + selectedEffect);
 
   // Load toggle settings
   trailLength = prefs.getInt("trailLength", 40);
   lightOverride = prefs.getBool("lightOverride", true);
-  bootDone = prefs.getBool("bootDone", false);
   indicatorTrailMode = prefs.getBool("indicatorTrailMode", false);
   leftTrailReverse = prefs.getBool("leftTrailReverse", false);
   rightTrailReverse = prefs.getBool("rightTrailReverse", true);
   reverseIndicatorSides = prefs.getBool("reverseSides", false);
-  
   
   // Load runtime configurable settings
   brakeActiveBrightness = prefs.getInt("fullBrakeBrightness", brakeActiveBrightness);
@@ -298,26 +391,14 @@ void loadSavedSettings() {
   indicatorFlashTime = prefs.getInt("indicatorFlashTime", indicatorFlashTime);
   firstFlashDuration = prefs.getInt("firstFlashDuration", firstFlashDuration);
   trailUpdateInterval = prefs.getInt("trailFlashInterval", trailUpdateInterval);
-  bootDurationMs = prefs.getInt("bootDuration", bootDurationMs);
   
-  // Load colors
-  String savedBootColor = prefs.getString("bootColour", "");
-  if (savedBootColor.length() == 7 && savedBootColor[0] == '#') {
-    long number = strtol(savedBootColor.substring(1).c_str(), NULL, 16);
-    bootColor = CRGB((number >> 16) & 0xFF, (number >> 8) & 0xFF, number & 0xFF);
-  }
-  
+  // Load saved indicator color
   String savedIndicatorColor = prefs.getString("indicatorColour", "");
   if (savedIndicatorColor.length() == 7 && savedIndicatorColor[0] == '#') {
     long number = strtol(savedIndicatorColor.substring(1).c_str(), NULL, 16);
     indicatorColor = CRGB((number >> 16) & 0xFF, (number >> 8) & 0xFF, number & 0xFF);
   }
   
-  // Recalculate derived values
-  bootSteps = NUM_LEDS / 2;
-  bootStepDelay = bootDurationMs / bootSteps;
-  
-  // Print loaded settings
   printLoadedSettings();
 }
 
@@ -345,8 +426,11 @@ void printLoadedSettings() {
 
 // ===== NETWORK INITIALIZATION =====
 void initializeNetwork() {
-  // Start WiFi Access Point
-  WiFi.softAP(ssid, password);
+  // Set WiFi mode for faster startup
+  WiFi.mode(WIFI_AP);
+  
+  // Configure WiFi for optimal iPhone connection
+  WiFi.softAP(ssid, password, 6, 0, 4);  // Channel 6, max 4 connections
   Serial.print("Access Point IP: ");
   Serial.println(WiFi.softAPIP());
 
@@ -358,6 +442,7 @@ void initializeNetwork() {
   
   // Add CORS headers for all responses
   server.enableCORS(true);
+  server.enableCrossOrigin(true);
   
   // Configure server for large file uploads
   server.setContentLength(2 * 1024 * 1024); // 2MB max
@@ -369,6 +454,14 @@ void initializeNetwork() {
 void setupWebServerRoutes() {
   server.on("/", handleRoot);
   server.on("/settings", handleSettings);
+  
+  // Static file serving with proper headers
+  server.on("/styles.css", HTTP_GET, handleStyles);
+  server.on("/script.js", HTTP_GET, handleScript);
+  server.on("/iro.min.js", HTTP_GET, handleIro);
+  server.on("/settings-styles.css", HTTP_GET, handleSettingsStyles);
+  server.on("/settings-script.js", HTTP_GET, handleSettingsScript);
+  server.on("/manifest.json", HTTP_GET, handleManifest);
   
   // API endpoints
   server.on("/setColor", HTTP_GET, handleSetColor);
@@ -452,7 +545,8 @@ void handleSetEffect() {
   if (server.hasArg("effect")) {
     String effect = server.arg("effect");
     Serial.println("Effect set to: " + effect);
-    selectedEffect = effect;
+    currentEffect = stringToEffect(effect);
+    selectedEffect = effect; // Keep string for web compatibility
     prefs.putString("effect", effect);
   }
   server.send(200, "text/plain", "OK");
@@ -649,6 +743,43 @@ void handleFactoryReset() {
   ESP.restart();
 }
 
+// ===== STATIC FILE HANDLERS =====
+void handleStyles() {
+  server.sendHeader("Content-Type", "text/css");
+  server.sendHeader("Cache-Control", "public, max-age=86400"); // Cache for 24 hours
+  server.send(200, "text/css", stylesCSS);
+}
+
+void handleScript() {
+  server.sendHeader("Content-Type", "application/javascript");
+  server.sendHeader("Cache-Control", "public, max-age=86400"); // Cache for 24 hours
+  server.send(200, "application/javascript", scriptJS);
+}
+
+void handleIro() {
+  server.sendHeader("Content-Type", "application/javascript");
+  server.sendHeader("Cache-Control", "public, max-age=86400"); // Cache for 24 hours
+  server.send(200, "application/javascript", iroJS);
+}
+
+void handleSettingsStyles() {
+  server.sendHeader("Content-Type", "text/css");
+  server.sendHeader("Cache-Control", "public, max-age=86400"); // Cache for 24 hours
+  server.send(200, "text/css", settingsStylesCSS);
+}
+
+void handleSettingsScript() {
+  server.sendHeader("Content-Type", "application/javascript");
+  server.sendHeader("Cache-Control", "public, max-age=86400"); // Cache for 24 hours
+  server.send(200, "application/javascript", settingsScriptJS);
+}
+
+void handleManifest() {
+  server.sendHeader("Content-Type", "application/manifest+json");
+  server.sendHeader("Cache-Control", "public, max-age=31536000"); // 1 year cache
+  server.send(200, "application/manifest+json", manifestJSON);
+}
+
 // ===== SETTINGS PARSING =====
 void parseAndApplySettings(String json) {
   // Helper function to extract JSON values
@@ -701,7 +832,7 @@ void applyRuntimeSettings(String json, int (*extractInt)(const String&, const St
   
   // Handle LED count settings
   int totalLedCount = extractInt(json, "totalLedCount");
-  if (totalLedCount != -1 && totalLedCount > 0 && totalLedCount <= 1000) {
+  if (totalLedCount != -1 && totalLedCount > 0 && totalLedCount <= 300) {
     NUM_LEDS = totalLedCount;
     MAIN_LEN = NUM_LEDS - (BRAKE_END_LED - BRAKE_START_LED + 1);
     prefs.putInt("totalLedCount", NUM_LEDS);
@@ -729,6 +860,7 @@ void applyRuntimeSettings(String json, int (*extractInt)(const String&, const St
   
   bool xlightsToggle = extractBool(json, "xlightsToggle");
   if (xlightsToggle) {
+    currentEffect = XLIGHTS;
     selectedEffect = "X-lights";
     prefs.putString("effect", selectedEffect);
     Serial.println("Updated selectedEffect: " + selectedEffect);
@@ -874,6 +1006,7 @@ void loop() {
   dnsServer.processNextRequest();
   server.handleClient();
   ArduinoOTA.handle();
+  updateStatusLed(); // Update status LED
 
   // Frame rate controlled LED updates
   if (now - lastFrameTime >= frameInterval) {
@@ -881,10 +1014,18 @@ void loop() {
     
     if (!bootDone) {
       runBootEffect();
+      // Handle background loading during boot effect
+      handleBackgroundLoading();
       return;  // Skip rest of loop until boot effect done
     }
+    
+    // Handle background loading if boot effect was disabled
+    if (!backgroundLoadingComplete) {
+      handleBackgroundLoading();
+      return;  // Skip rest of loop until background loading done
+    }
 
-    if (selectedEffect.equalsIgnoreCase("X-lights")) {
+    if (currentEffect == XLIGHTS) {
       handleDDP();
       FastLED.show();
       return;  // skip everything else when Xlights active
@@ -957,6 +1098,39 @@ void handleDDP() {
 
     leds[ledIndex] = CRGB(r, g, b);
   }
+}
+
+// ===== BACKGROUND LOADING =====
+void handleBackgroundLoading() {
+  if (backgroundLoadingComplete) return;
+  
+  if (!backgroundLoadingStarted) {
+    backgroundLoadingStarted = true;
+    backgroundLoadStartTime = millis();
+    Serial.println("Starting background loading...");
+  }
+  
+  // Load all settings
+  loadAllSettings();
+  
+  // Optimize WiFi for iPhone connections
+  WiFi.setSleep(false);  // Disable WiFi sleep for faster response
+  
+  // Initialize WiFi and web server
+  initializeNetwork();
+  
+  // Initialize DDP (only if X-lights mode is selected)
+  if (selectedEffect.equalsIgnoreCase("X-lights")) {
+    ddpUdp.begin(DDP_PORT);
+    Serial.println("DDP listener started on port 4048");
+  }
+  
+  // Initialize OTA
+  initializeOTA();
+  
+  backgroundLoadingComplete = true;
+  unsigned long loadTime = millis() - backgroundLoadStartTime;
+  Serial.println("Background loading complete in " + String(loadTime) + "ms");
 }
 
 // ===== BOOT EFFECT =====
@@ -1168,20 +1342,28 @@ void updateColorTransition() {
 void runEffect() {
   rainbowOffset++;
 
-  if (selectedEffect.equalsIgnoreCase("rainbow")) {
-    runRainbowEffect();
-  } else if (selectedEffect.equalsIgnoreCase("solid")) {
-    runSolidEffect();
-  } else if (selectedEffect.equalsIgnoreCase("sparkle")) {
-    runSparkleEffect();
-  } else if (selectedEffect.equalsIgnoreCase("pulse")) {
-    runPulseEffect();
-  } else if (selectedEffect.equalsIgnoreCase("chase")) {
-    runChaseEffect();
-  } else if (selectedEffect.equalsIgnoreCase("Hazard")) {
-    runHazardEffect();
-  } else {
-    fill_solid(leds, MAIN_LEN, CRGB::Black);
+  switch (currentEffect) {
+    case RAINBOW:
+      runRainbowEffect();
+      break;
+    case SOLID:
+      runSolidEffect();
+      break;
+    case SPARKLE:
+      runSparkleEffect();
+      break;
+    case PULSE:
+      runPulseEffect();
+      break;
+    case CHASE:
+      runChaseEffect();
+      break;
+    case HAZARD:
+      runHazardEffect();
+      break;
+    default:
+      fill_solid(leds, MAIN_LEN, CRGB::Black);
+      break;
   }
 }
 
@@ -1304,5 +1486,73 @@ void runHazardEffect() {
         }
       }
     }
+  }
+}
+
+// ===== STATUS LED CONTROL =====
+void updateStatusLed() {
+  unsigned long now = millis();
+  
+  // If boot effect is still running, do flash pattern
+  if (!bootDone) {
+    // Initialize boot flash pattern
+    if (!statusLedBootFlashActive) {
+      statusLedBootFlashActive = true;
+      statusLedBootFlashTime = now;
+      statusLedBootFlashCount = 0;
+      statusLedBootFlashState = false;
+      statusLedBootFlashGroup = 0;
+      digitalWrite(STATUS_LED_PIN, LOW); // Start with LED off
+    }
+    
+    // Boot flash pattern: 2 quick flashes, pause, repeat
+    // Each flash: 200ms on, 200ms off, then 1000ms pause
+    unsigned long cycleTime = now - statusLedBootFlashTime;
+    unsigned long groupTime = cycleTime % 1600; // 1600ms total cycle (800ms flash + 800ms pause)
+    
+    if (groupTime < 800) { // First 800ms: flash twice
+      unsigned long flashTime = groupTime % 400; // 400ms per flash (200ms on + 200ms off)
+      bool shouldBeOn = (flashTime < 200); // First 200ms on, second 200ms off
+      
+      if (shouldBeOn != statusLedBootFlashState) {
+        statusLedBootFlashState = shouldBeOn;
+        digitalWrite(STATUS_LED_PIN, shouldBeOn ? HIGH : LOW);
+      }
+    } else { // Second 400ms: pause
+      if (statusLedBootFlashState) {
+        statusLedBootFlashState = false;
+        digitalWrite(STATUS_LED_PIN, LOW);
+      }
+    }
+    
+    return;
+  }
+  
+  // After boot, start pulsing
+  if (!statusLedPulseActive) {
+    statusLedPulseActive = true;
+    statusLedBrightness = 100;
+    statusLedDirection = -1; // Start by decreasing
+  }
+  
+  // Update every 50ms for optimized pulsing
+  if (now - statusLedLastUpdate >= 50) {
+    statusLedLastUpdate = now;
+    
+    // Update brightness
+    statusLedBrightness += statusLedDirection;
+    
+    // Change direction at boundaries
+    if (statusLedBrightness >= 100) {
+      statusLedBrightness = 100;
+      statusLedDirection = -1;
+    } else if (statusLedBrightness <= 0) {
+      statusLedBrightness = 0;
+      statusLedDirection = 1;
+    }
+    
+    // Apply brightness using PWM (0-100 to 0-255)
+    uint8_t pwmValue = map(statusLedBrightness, 0, 100, 0, 255);
+    analogWrite(STATUS_LED_PIN, pwmValue);
   }
 }
